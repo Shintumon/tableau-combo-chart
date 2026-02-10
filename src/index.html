@@ -102,7 +102,8 @@
     </div>
     <div id="debug-content" class="debug-content"></div>
   </div>
-  <button id="debug-toggle" class="debug-toggle" title="Toggle Debug Console">🐛</button>
+  <!-- Debug toggle hidden by default - use Ctrl+Shift+D to show -->
+  <button id="debug-toggle" class="debug-toggle hidden" title="Toggle Debug Console">🐛</button>
 
   <script>
     // Debug Console Implementation
@@ -202,12 +203,45 @@
 
       debugCopy.addEventListener('click', () => {
         const text = logs.map(l => `[${l.timestamp}] ${l.type.toUpperCase()}: ${l.message}`).join('\n');
-        navigator.clipboard.writeText(text).then(() => {
-          console.log('Logs copied to clipboard');
-        }).catch(err => {
-          console.error('Failed to copy:', err);
-        });
+        copyToClipboard(text);
       });
+
+      // Clipboard fallback for Tableau webview
+      function copyToClipboard(text) {
+        // Try modern API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            showCopyFeedback('Logs copied!');
+          }).catch(() => {
+            fallbackCopy(text);
+          });
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showCopyFeedback('Logs copied!');
+        } catch (e) {
+          showCopyFeedback('Copy failed - select manually');
+          console.error('Copy failed:', e);
+        }
+        document.body.removeChild(textarea);
+      }
+
+      function showCopyFeedback(msg) {
+        const origText = debugCopy.textContent;
+        debugCopy.textContent = msg;
+        setTimeout(() => { debugCopy.textContent = origText; }, 1500);
+      }
 
       // Log environment info
       function logEnvironmentInfo() {
@@ -248,12 +282,21 @@
         console.info('========================');
       }
 
-      // Keyboard shortcut: Ctrl+Shift+D to toggle
+      // Keyboard shortcut: Ctrl+Shift+D to toggle debug panel
+      // This is the only way to access the debug panel (hidden from regular users)
       document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+          e.preventDefault();
+          // Show the toggle button once debug mode is activated
+          debugToggle.classList.remove('hidden');
           debugToggle.click();
         }
       });
+
+      // Also allow ?debug=1 URL parameter for developers
+      if (window.location.search.includes('debug=1') || window.location.search.includes('debug=true')) {
+        debugToggle.classList.remove('hidden');
+      }
     })();
   </script>
 
