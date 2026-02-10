@@ -311,6 +311,8 @@
       yAxisFont: { family: detectedFont, size: bodySize, weight: 400, color: '#666666', italic: false },
       legendFont: { family: detectedFont, size: bodySize, weight: 400, color: '#333333', italic: false },
       barLabelFont: { family: detectedFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      bar1LabelFont: { family: detectedFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      bar2LabelFont: { family: detectedFont, size: labelSize, weight: 400, color: '#333333', italic: false },
       lineLabelFont: { family: detectedFont, size: labelSize, weight: 400, color: '#333333', italic: false },
       tooltipFont: { family: detectedFont, size: bodySize, weight: 400, color: '#ffffff', italic: false }
     };
@@ -1474,32 +1476,30 @@
       safeSetValue(elements.legendFontColor, config.legendFont.color || '#333333');
       safeSetChecked(elements.legendItalic, config.legendFont.italic || false);
     }
-    if (config.barLabelFont) {
-      safeSetFontValue(elements.barLabelFontFamily, config.barLabelFont.family || '');
-      safeSetValue(elements.barLabelFontWeight, config.barLabelFont.weight || 400);
-      safeSetChecked(elements.barLabelItalic, config.barLabelFont.italic || false);
-    }
+    // Bar label font (general)
+    const barLF = config.barLabelFont || {};
+    safeSetFontValue(elements.barLabelFontFamily, barLF.family || '');
+    safeSetValue(elements.barLabelFontWeight, barLF.weight || 400);
+    safeSetChecked(elements.barLabelItalic, barLF.italic || false);
     // Bar 1 label font
-    if (config.bar1LabelFont) {
-      safeSetFontValue(elements.bar1LabelFontFamily, config.bar1LabelFont.family || '');
-      safeSetValue(elements.bar1LabelFontSize, config.bar1LabelFont.size || 10);
-      safeSetValue(elements.bar1LabelFontWeight, config.bar1LabelFont.weight || 400);
-      safeSetValue(elements.bar1LabelColor, config.bar1LabelFont.color || '#333333');
-      safeSetChecked(elements.bar1LabelItalic, config.bar1LabelFont.italic || false);
-    }
+    const bar1LF = config.bar1LabelFont || config.barLabelFont || {};
+    safeSetFontValue(elements.bar1LabelFontFamily, bar1LF.family || '');
+    safeSetValue(elements.bar1LabelFontSize, bar1LF.size || 10);
+    safeSetValue(elements.bar1LabelFontWeight, bar1LF.weight || 400);
+    safeSetValue(elements.bar1LabelColor, bar1LF.color || config.barLabels?.color || '#333333');
+    safeSetChecked(elements.bar1LabelItalic, bar1LF.italic || false);
     // Bar 2 label font
-    if (config.bar2LabelFont) {
-      safeSetFontValue(elements.bar2LabelFontFamily, config.bar2LabelFont.family || '');
-      safeSetValue(elements.bar2LabelFontSize, config.bar2LabelFont.size || 10);
-      safeSetValue(elements.bar2LabelFontWeight, config.bar2LabelFont.weight || 400);
-      safeSetValue(elements.bar2LabelColor, config.bar2LabelFont.color || '#333333');
-      safeSetChecked(elements.bar2LabelItalic, config.bar2LabelFont.italic || false);
-    }
-    if (config.lineLabelFont) {
-      safeSetFontValue(elements.lineLabelFontFamily, config.lineLabelFont.family || '');
-      safeSetValue(elements.lineLabelFontWeight, config.lineLabelFont.weight || 400);
-      safeSetChecked(elements.lineLabelItalic, config.lineLabelFont.italic || false);
-    }
+    const bar2LF = config.bar2LabelFont || config.barLabelFont || {};
+    safeSetFontValue(elements.bar2LabelFontFamily, bar2LF.family || '');
+    safeSetValue(elements.bar2LabelFontSize, bar2LF.size || 10);
+    safeSetValue(elements.bar2LabelFontWeight, bar2LF.weight || 400);
+    safeSetValue(elements.bar2LabelColor, bar2LF.color || config.barLabels?.color || '#333333');
+    safeSetChecked(elements.bar2LabelItalic, bar2LF.italic || false);
+    // Line label font
+    const lineLF = config.lineLabelFont || {};
+    safeSetFontValue(elements.lineLabelFontFamily, lineLF.family || '');
+    safeSetValue(elements.lineLabelFontWeight, lineLF.weight || 400);
+    safeSetChecked(elements.lineLabelItalic, lineLF.italic || false);
     if (config.tooltipFont) {
       safeSetFontValue(elements.tooltipFontFamily, config.tooltipFont.family || '');
       safeSetValue(elements.tooltipFontWeight, config.tooltipFont.weight || 400);
@@ -2017,10 +2017,13 @@
       });
     }
     if (elements.bar1LabelColor) {
-      elements.bar1LabelColor.addEventListener('change', (e) => {
+      const bar1ColorHandler = (e) => {
         if (!config.bar1LabelFont) config.bar1LabelFont = {};
         config.bar1LabelFont.color = e.target.value;
-      });
+        config.barLabels.color = e.target.value;
+      };
+      elements.bar1LabelColor.addEventListener('change', bar1ColorHandler);
+      elements.bar1LabelColor.addEventListener('input', bar1ColorHandler);
     }
     if (elements.bar1LabelItalic) {
       elements.bar1LabelItalic.addEventListener('change', (e) => {
@@ -2049,10 +2052,12 @@
       });
     }
     if (elements.bar2LabelColor) {
-      elements.bar2LabelColor.addEventListener('change', (e) => {
+      const bar2ColorHandler = (e) => {
         if (!config.bar2LabelFont) config.bar2LabelFont = {};
         config.bar2LabelFont.color = e.target.value;
-      });
+      };
+      elements.bar2LabelColor.addEventListener('change', bar2ColorHandler);
+      elements.bar2LabelColor.addEventListener('input', bar2ColorHandler);
     }
     if (elements.bar2LabelItalic) {
       elements.bar2LabelItalic.addEventListener('change', (e) => {
@@ -2087,11 +2092,15 @@
       config.lineLabelFont.size = parseInt(e.target.value);
     });
     // Sync line-label-color to lineLabelFont.color
-    safeAddListener(elements.lineLabelColor, 'change', (e) => {
-      config.lineLabels.color = e.target.value;
-      if (!config.lineLabelFont) config.lineLabelFont = {};
-      config.lineLabelFont.color = e.target.value;
-    });
+    if (elements.lineLabelColor) {
+      const lineColorHandler = (e) => {
+        config.lineLabels.color = e.target.value;
+        if (!config.lineLabelFont) config.lineLabelFont = {};
+        config.lineLabelFont.color = e.target.value;
+      };
+      elements.lineLabelColor.addEventListener('change', lineColorHandler);
+      elements.lineLabelColor.addEventListener('input', lineColorHandler);
+    }
     // Line label offset
     if (elements.lineLabelOffsetX) {
       elements.lineLabelOffsetX.addEventListener('change', (e) => {

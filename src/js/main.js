@@ -49,6 +49,10 @@
       await tableau.extensions.initializeAsync({ configure: openConfigDialog });
       log('Combo Chart: Tableau API initialized');
 
+      // Re-init Config now that Tableau API is ready (picks up workbook font sizes)
+      Config.init();
+      log('Combo Chart: Config defaults updated with workbook formatting');
+
       // Initialize data handler with the worksheet
       DataHandler.init();
       log('Combo Chart: DataHandler initialized');

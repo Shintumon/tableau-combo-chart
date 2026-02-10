@@ -611,12 +611,20 @@ const Config = {
     switch (format) {
       case 'number':
         return d3.format(',.0f');
+      case 'number2':
+        return d3.format(',.2f');
       case 'currency':
+        return d3.format('$,.0f');
+      case 'currency2':
         return d3.format('$,.2f');
       case 'percent':
+        return d3.format('.0%');
+      case 'percent2':
         return d3.format('.2%');
       case 'compact':
         return d3.format('.2s');
+      case 'scientific':
+        return d3.format('.3e');
       default:
         return d3.format(',.2~f');
     }
