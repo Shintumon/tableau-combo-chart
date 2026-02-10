@@ -126,6 +126,7 @@ const DataHandler = {
       const chartData = data.map(row => {
         return {
           dimension: dimIndex >= 0 ? row[dimIndex].formattedValue : 'N/A',
+          dimensionRaw: dimIndex >= 0 ? row[dimIndex].value : null,
           bar1Value: bar1Index >= 0 ? this.parseNumber(row[bar1Index]) : 0,
           bar2Value: bar2Index >= 0 ? this.parseNumber(row[bar2Index]) : 0,
           lineValue: lineIndex >= 0 ? this.parseNumber(row[lineIndex]) : 0,
@@ -134,6 +135,14 @@ const DataHandler = {
           lineFormatted: lineIndex >= 0 ? row[lineIndex].formattedValue : '0'
         };
       });
+
+      // Detect Tableau's native number format from formattedValues
+      const detectedFormats = {
+        bar1: this.detectFormat(chartData, 'bar1'),
+        bar2: this.detectFormat(chartData, 'bar2'),
+        line: this.detectFormat(chartData, 'line')
+      };
+      console.log('Detected Tableau formats:', detectedFormats);
 
       // Get field names for labels
       const fieldNames = {
@@ -149,6 +158,7 @@ const DataHandler = {
       return {
         data: chartData,
         fieldNames: fieldNames,
+        detectedFormats: detectedFormats,
         hasAllFields: dimIndex >= 0 && bar1Index >= 0 && bar2Index >= 0 && lineIndex >= 0
       };
     } catch (e) {
@@ -230,6 +240,42 @@ const DataHandler = {
       worksheet.removeEventListener(tableau.TableauEventType.FilterChanged, callback);
       worksheet.removeEventListener(tableau.TableauEventType.SummaryDataChanged, callback);
     }
+  },
+
+  /**
+   * Detect Tableau's number format from formattedValues
+   * Analyzes sample data to detect currency symbols, percent, decimal places
+   */
+  detectFormat(data, field) {
+    // Find a non-zero sample
+    const sample = data.find(d => d[field + 'Value'] && d[field + 'Value'] !== 0);
+    if (!sample) return null;
+
+    const formatted = sample[field + 'Formatted'];
+    if (!formatted || formatted === '0') return null;
+
+    // Detect currency prefix (e.g., $, €, £, ¥)
+    const prefixMatch = formatted.match(/^([^0-9\s(.-]+)\s*/);
+    const currencySymbol = prefixMatch ? prefixMatch[1] : null;
+
+    // Detect percent suffix
+    const isPercent = /%\s*$/.test(formatted);
+
+    // Detect decimal places
+    const decMatch = formatted.match(/\.(\d+)/);
+    const decimals = decMatch ? decMatch[1].length : 0;
+
+    // Detect thousands separator
+    const hasThousandsSep = /\d{1,3}(,\d{3})/.test(formatted);
+
+    if (currencySymbol) {
+      return { type: 'currency', currencySymbol, decimals, hasThousandsSep };
+    } else if (isPercent) {
+      return { type: 'percent', decimals };
+    } else if (decimals > 0 || hasThousandsSep) {
+      return { type: 'number', decimals, hasThousandsSep };
+    }
+    return null;
   },
 
   /**

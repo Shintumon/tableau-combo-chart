@@ -294,6 +294,12 @@ html, body {
   overflow: visible;
   flex: 1 1 auto;
   display: block;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.chart-area svg text {
+  text-rendering: geometricPrecision;
 }
 
 /* Legend */
@@ -571,6 +577,9 @@ html, body {
 /* Labels - font-size, font-weight, fill are set dynamically by D3 */
 .bar-label, .line-label {
   pointer-events: none;
+}
+
+.bar-label {
   font-feature-settings: 'tnum';
 }
 

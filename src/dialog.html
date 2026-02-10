@@ -521,6 +521,28 @@
               <option value="120">120px (Truncate)</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="x-axis-format">Label Format</label>
+            <select id="x-axis-format" class="form-control">
+              <option value="auto">Auto (Tableau)</option>
+              <option value="number">Number (1,234)</option>
+              <option value="currency">Currency ($1,234)</option>
+              <option value="percent">Percent (12%)</option>
+              <option value="compact">Compact (1.2K)</option>
+              <option value="scientific">Scientific (1.23e+3)</option>
+              <option value="custom">Custom...</option>
+            </select>
+          </div>
+          <div class="form-row" id="x-axis-format-options" style="display:none;">
+            <div class="form-group">
+              <label for="x-axis-decimals">Decimal Places</label>
+              <input type="number" id="x-axis-decimals" min="0" max="6" value="0" class="form-control small">
+            </div>
+            <div class="form-group" id="x-axis-currency-group" style="display:none;">
+              <label for="x-axis-currency-symbol">Currency Symbol</label>
+              <input type="text" id="x-axis-currency-symbol" value="$" class="form-control small" maxlength="5" style="width:60px;">
+            </div>
+          </div>
         </section>
 
         <section class="config-section">

@@ -23,6 +23,7 @@ const ComboChart = {
   data: null,
   originalData: null,  // Store original unsorted data to prevent double-reverse on resize
   fieldNames: null,
+  detectedFormats: null,
   config: null,
 
   // Animation state
@@ -368,8 +369,15 @@ const ComboChart = {
    * Render axes
    */
   renderAxes() {
-    const formatLeft = Config.getFormatter(this.config.yAxisLeft.format, this.config.yAxisLeft.decimals, this.config.yAxisLeft.currencySymbol);
-    const formatRight = Config.getFormatter(this.config.yAxisRight.format, this.config.yAxisRight.decimals, this.config.yAxisRight.currencySymbol);
+    // Y-axis formatters: use detected Tableau format when 'auto', otherwise use user selection
+    const leftFormat = this.config.yAxisLeft.format || 'auto';
+    const formatLeft = leftFormat !== 'auto'
+      ? Config.getFormatter(leftFormat, this.config.yAxisLeft.decimals, this.config.yAxisLeft.currencySymbol)
+      : (this.detectedFormats?.bar1 ? Config.getAutoFormatter(this.detectedFormats.bar1) : Config.getFormatter('auto'));
+    const rightFormat = this.config.yAxisRight.format || 'auto';
+    const formatRight = rightFormat !== 'auto'
+      ? Config.getFormatter(rightFormat, this.config.yAxisRight.decimals, this.config.yAxisRight.currencySymbol)
+      : (this.detectedFormats?.line ? Config.getAutoFormatter(this.detectedFormats.line) : Config.getFormatter('auto'));
 
     const self = this;
 
@@ -422,6 +430,23 @@ const ComboChart = {
           case 'end': textAnchor = 'start'; break;    // Right = text extends right from center
           default: textAnchor = 'middle';
         }
+      }
+
+      // Apply X-axis label formatting if not 'auto'
+      const xFormat = xAxisConfig.format || 'auto';
+      if (xFormat !== 'auto') {
+        const xFormatter = Config.getFormatter(xFormat, xAxisConfig.decimals, xAxisConfig.currencySymbol);
+        // Build lookup from display text → raw value
+        const rawLookup = {};
+        this.data.forEach(d => { rawLookup[d.dimension] = d.dimensionRaw; });
+        xAxisGroup.selectAll('.tick text').each(function() {
+          const el = d3.select(this);
+          const label = el.text();
+          const raw = rawLookup[label];
+          if (raw !== null && raw !== undefined && !isNaN(Number(raw))) {
+            el.text(xFormatter(Number(raw)));
+          }
+        });
       }
 
       xAxisGroup.selectAll('.tick text')

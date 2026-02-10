@@ -147,6 +147,9 @@ const Config = {
       align: 'center',
       sort: 'default',
       maxWidth: 'none',
+      format: 'auto',
+      decimals: 0,
+      currencySymbol: '$',
       tickColor: '#999999',
       lineColor: '#999999'
     },
@@ -647,6 +650,27 @@ const Config = {
         return (value) => (symbol && symbol.trim()) ? symbol + d3.format(`,.${d}f`)(value) : d3.format(`,.${d}f`)(value);
       default:
         return d3.format(',.2~f');
+    }
+  },
+
+  /**
+   * Build a formatter from a detected Tableau format
+   * Used for 'auto' mode to replicate Tableau's native formatting
+   */
+  getAutoFormatter(detectedFormat) {
+    if (!detectedFormat) return d3.format(',.0f');
+    const d = detectedFormat.decimals || 0;
+    switch (detectedFormat.type) {
+      case 'currency': {
+        const sym = detectedFormat.currencySymbol || '$';
+        return (value) => sym + d3.format(`,.${d}f`)(value);
+      }
+      case 'percent':
+        return d3.format(`.${d}%`);
+      case 'number':
+        return detectedFormat.hasThousandsSep ? d3.format(`,.${d}f`) : d3.format(`.${d}f`);
+      default:
+        return d3.format(',.0f');
     }
   },
 

@@ -296,7 +296,7 @@
       animation: { enabled: true, duration: 500, easing: 'easeCubicOut' },
       font: { family: detectedFont, titleWeight: 600, labelWeight: 400 },
       axisMode: 'dual',
-      xAxis: { show: true, title: '', fontSize: bodySize, rotation: 0, sort: 'default', showTitle: true, showLabels: true, showTickMarks: true, showAxisLine: true, align: 'center', maxWidth: 'none', lineColor: '#999999', tickColor: '#999999' },
+      xAxis: { show: true, title: '', fontSize: bodySize, rotation: 0, sort: 'default', showTitle: true, showLabels: true, showTickMarks: true, showAxisLine: true, align: 'center', maxWidth: 'none', format: 'auto', decimals: 0, currencySymbol: '$', lineColor: '#999999', tickColor: '#999999' },
       yAxisLeft: { show: true, title: '', min: null, max: null, format: 'auto', decimals: 0, currencySymbol: '$', includeZero: true },
       yAxisRight: { show: true, title: '', min: null, max: null, format: 'auto', decimals: 0, currencySymbol: '$', includeZero: true },
       grid: { horizontal: true, vertical: false, color: '#e0e0e0', opacity: 0.5 },
@@ -527,6 +527,11 @@
     elements.xAxisAlign = document.getElementById('x-axis-align');
     elements.xAxisSort = document.getElementById('x-axis-sort');
     elements.xAxisMaxWidth = document.getElementById('x-axis-max-width');
+    elements.xAxisFormat = document.getElementById('x-axis-format');
+    elements.xAxisDecimals = document.getElementById('x-axis-decimals');
+    elements.xAxisCurrencySymbol = document.getElementById('x-axis-currency-symbol');
+    elements.xAxisFormatOptions = document.getElementById('x-axis-format-options');
+    elements.xAxisCurrencyGroup = document.getElementById('x-axis-currency-group');
 
     // Y-Axis Left visibility toggles
     elements.yAxisLeftShowTitle = document.getElementById('y-axis-left-show-title');
@@ -1383,6 +1388,10 @@
     safeSetValue(elements.xAxisAlign, config.xAxis.align || 'center');
     safeSetValue(elements.xAxisSort, config.xAxis.sort || 'default');
     safeSetValue(elements.xAxisMaxWidth, config.xAxis.maxWidth || 'none');
+    safeSetValue(elements.xAxisFormat, config.xAxis.format || 'auto');
+    safeSetValue(elements.xAxisDecimals, config.xAxis.decimals || 0);
+    safeSetValue(elements.xAxisCurrencySymbol, config.xAxis.currencySymbol || '$');
+    updateFormatOptionsVisibility('x-axis', config.xAxis.format || 'auto');
 
     // Y-axis left settings
     safeSetChecked(elements.yAxisLeftShow, config.yAxisLeft.show);
@@ -1890,6 +1899,22 @@
     if (elements.xAxisMaxWidth) {
       elements.xAxisMaxWidth.addEventListener('change', (e) => {
         config.xAxis.maxWidth = e.target.value;
+      });
+    }
+    if (elements.xAxisFormat) {
+      elements.xAxisFormat.addEventListener('change', (e) => {
+        config.xAxis.format = e.target.value;
+        updateFormatOptionsVisibility('x-axis', e.target.value);
+      });
+    }
+    if (elements.xAxisDecimals) {
+      elements.xAxisDecimals.addEventListener('input', (e) => {
+        config.xAxis.decimals = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.xAxisCurrencySymbol) {
+      elements.xAxisCurrencySymbol.addEventListener('input', (e) => {
+        config.xAxis.currencySymbol = e.target.value;
       });
     }
 
