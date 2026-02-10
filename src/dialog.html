@@ -1076,6 +1076,166 @@
     </footer>
   </div>
 
+  <!-- Debug Console Panel -->
+  <div id="debug-panel" class="debug-panel hidden">
+    <div class="debug-header">
+      <span>Debug Console (Dialog)</span>
+      <div class="debug-actions">
+        <button id="debug-clear" class="debug-btn" title="Clear">Clear</button>
+        <button id="debug-copy" class="debug-btn" title="Copy">Copy</button>
+        <button id="debug-close" class="debug-btn" title="Close">×</button>
+      </div>
+    </div>
+    <div id="debug-content" class="debug-content"></div>
+  </div>
+  <button id="debug-toggle" class="debug-toggle" title="Toggle Debug Console (Ctrl+Shift+D)">🐛</button>
+
+  <script>
+    // Debug Console Implementation for Dialog
+    (function() {
+      const debugPanel = document.getElementById('debug-panel');
+      const debugContent = document.getElementById('debug-content');
+      const debugToggle = document.getElementById('debug-toggle');
+      const debugClear = document.getElementById('debug-clear');
+      const debugCopy = document.getElementById('debug-copy');
+      const debugClose = document.getElementById('debug-close');
+
+      let logs = [];
+      const MAX_LOGS = 200;
+
+      function addLog(type, ...args) {
+        const timestamp = new Date().toLocaleTimeString();
+        const message = args.map(arg => {
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch (e) {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        }).join(' ');
+
+        const log = { timestamp, type, message };
+        logs.push(log);
+        if (logs.length > MAX_LOGS) logs.shift();
+
+        const logEl = document.createElement('div');
+        logEl.className = `debug-log debug-${type}`;
+        logEl.innerHTML = `<span class="debug-time">[${timestamp}]</span> <span class="debug-type">${type.toUpperCase()}</span> ${escapeHtml(message)}`;
+        debugContent.appendChild(logEl);
+        debugContent.scrollTop = debugContent.scrollHeight;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // Override console methods
+      const originalConsole = {
+        log: console.log.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console),
+        info: console.info.bind(console)
+      };
+
+      console.log = function(...args) {
+        originalConsole.log(...args);
+        addLog('log', ...args);
+      };
+      console.warn = function(...args) {
+        originalConsole.warn(...args);
+        addLog('warn', ...args);
+      };
+      console.error = function(...args) {
+        originalConsole.error(...args);
+        addLog('error', ...args);
+      };
+      console.info = function(...args) {
+        originalConsole.info(...args);
+        addLog('info', ...args);
+      };
+
+      window.onerror = function(msg, url, line, col, error) {
+        console.error('ERROR:', msg, 'at line', line, col, error?.stack || '');
+        return false;
+      };
+
+      // Toggle panel
+      debugToggle.addEventListener('click', () => {
+        debugPanel.classList.toggle('hidden');
+        if (!debugPanel.classList.contains('hidden')) {
+          logEnvironmentInfo();
+        }
+      });
+
+      debugClose.addEventListener('click', () => {
+        debugPanel.classList.add('hidden');
+      });
+
+      debugClear.addEventListener('click', () => {
+        logs = [];
+        debugContent.innerHTML = '';
+        console.log('Debug console cleared');
+      });
+
+      debugCopy.addEventListener('click', () => {
+        const text = logs.map(l => `[${l.timestamp}] ${l.type.toUpperCase()}: ${l.message}`).join('\n');
+        navigator.clipboard.writeText(text).then(() => {
+          console.log('Logs copied to clipboard');
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+        });
+      });
+
+      // Log environment info
+      function logEnvironmentInfo() {
+        console.info('=== Dialog Environment Info ===');
+        try {
+          if (typeof tableau !== 'undefined' && tableau.extensions) {
+            const env = tableau.extensions.environment;
+            console.info('Tableau Version:', env?.tableauVersion || 'N/A');
+            console.info('API Version:', env?.apiVersion || 'N/A');
+
+            // Workbook Formatting
+            if (env?.workbookFormatting) {
+              console.info('=== Workbook Formatting ===');
+              const sheets = env.workbookFormatting.formattingSheets || [];
+              console.info('Formatting Sheets Count:', sheets.length);
+              sheets.forEach((sheet, i) => {
+                console.info(`Sheet ${i}: classNameKey =`, sheet.classNameKey);
+                console.info(`Sheet ${i}: cssProperties =`, sheet.cssProperties);
+              });
+            } else {
+              console.warn('workbookFormatting NOT available (requires Tableau 2021.4+)');
+            }
+
+            // Font detection
+            console.info('=== Font Detection ===');
+            if (typeof getWorkbookFormatting === 'function') {
+              console.info('getWorkbookFormatting():', getWorkbookFormatting());
+            }
+            if (typeof detectSystemFont === 'function') {
+              console.info('detectSystemFont():', detectSystemFont());
+            }
+          } else {
+            console.warn('Tableau Extensions API not available');
+          }
+        } catch (e) {
+          console.error('Error getting environment info:', e.message);
+        }
+        console.info('================================');
+      }
+
+      // Keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+          debugToggle.click();
+        }
+      });
+    })();
+  </script>
+
   <script src="js/dialogConfig.js"></script>
 </body>
 </html>
