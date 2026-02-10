@@ -21,6 +21,7 @@ const ComboChart = {
 
   // Data
   data: null,
+  originalData: null,  // Store original unsorted data to prevent double-reverse on resize
   fieldNames: null,
   config: null,
 
@@ -163,6 +164,11 @@ const ComboChart = {
    * Main render function
    */
   render(data, fieldNames, config) {
+    // Store original data only if this is new data (not a resize re-render)
+    // ResizeObserver passes this.data, which is already sorted; we detect this by reference
+    if (data !== this.data) {
+      this.originalData = data;
+    }
     this.data = data;
     this.fieldNames = fieldNames;
     this.config = config;
@@ -190,8 +196,9 @@ const ComboChart = {
    * Create scales
    */
   createScales() {
-    // Sort data if configured
-    let sortedData = [...this.data];
+    // Always sort from original data to prevent double-reverse on resize
+    const dataSource = this.originalData || this.data;
+    let sortedData = [...dataSource];
     const sortOrder = this.config.xAxis?.sort || 'default';
     console.log('ComboChart.createScales: sortOrder =', sortOrder);
 
@@ -1160,10 +1167,11 @@ const ComboChart = {
   updateTitle() {
     const titleElement = document.getElementById('chart-title');
     if (this.config.title.show && titleElement) {
-      // DEBUG: Show sort value and first data item in title temporarily
+      // DEBUG: Show sort value and first/last data items in title temporarily
       const sortValue = this.config.xAxis?.sort || 'undefined';
       const firstItem = this.data && this.data[0] ? this.data[0].dimension : 'no data';
-      titleElement.textContent = (this.config.title.text || 'Combo Chart') + ` [Sort: ${sortValue}, First: ${firstItem}]`;
+      const lastItem = this.data && this.data.length > 0 ? this.data[this.data.length - 1].dimension : 'no data';
+      titleElement.textContent = (this.config.title.text || 'Combo Chart') + ` [Sort: ${sortValue}, First: ${firstItem}, Last: ${lastItem}]`;
       titleElement.style.display = 'block';
       titleElement.style.cursor = 'pointer';
 
