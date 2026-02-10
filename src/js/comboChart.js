@@ -97,7 +97,7 @@ const ComboChart = {
 
     // Bottom margin - accommodate x-axis labels based on rotation
     const xRotation = Math.abs(this.config.xAxis?.rotation || 0);
-    const bottomBase = xRotation === 0 ? 60 : xRotation <= 45 ? 80 : 100;
+    const bottomBase = xRotation === 0 ? 70 : xRotation <= 45 ? 85 : 105;
     // Add extra space if x-axis title is shown
     const hasXTitle = this.config.xAxis?.showTitle !== false &&
       (this.config.xAxis?.title || this.fieldNames?.dimension);
@@ -416,9 +416,11 @@ const ComboChart = {
       const maxWidth = this.config.xAxis.maxWidth;
 
       // Determine text-anchor based on rotation and alignment
+      const xLabelOffsetX = xAxisConfig.labelOffsetX || 0;
+      const xLabelOffsetY = xAxisConfig.labelOffsetY || 0;
       let textAnchor = 'middle';
       let dx = '0';
-      let dy = '0.71em';
+      let dy = '0.85em';
 
       if (rotation !== 0) {
         textAnchor = 'end';
@@ -467,7 +469,7 @@ const ComboChart = {
         .style('font-weight', xAxisFont.weight || 400)
         .style('fill', xAxisFont.color || '#666666')
         .style('font-style', this.getFontStyle(xAxisFont))
-        .attr('transform', `rotate(${rotation})`)
+        .attr('transform', `rotate(${rotation}) translate(${xLabelOffsetX}, ${xLabelOffsetY})`)
         .attr('dx', dx)
         .attr('dy', dy)
         .style('text-anchor', textAnchor)
@@ -551,13 +553,17 @@ const ComboChart = {
         .attr('stroke', yAxisLeftConfig.tickColor || '#999999');
 
       // Style labels
+      const yLeftOffsetX = yAxisLeftConfig.labelOffsetX || 0;
+      const yLeftOffsetY = yAxisLeftConfig.labelOffsetY || 0;
       yAxisLeftGroup.selectAll('.tick text')
         .style('display', yAxisLeftConfig.showLabels !== false ? null : 'none')
         .style('font-size', `${yAxisFont.size || 12}px`)
         .style('font-family', yAxisFont.family || null)
         .style('font-weight', yAxisFont.weight || 400)
         .style('fill', yAxisFont.color || '#666666')
-        .style('font-style', this.getFontStyle(yAxisFont));
+        .style('font-style', this.getFontStyle(yAxisFont))
+        .attr('dx', yLeftOffsetX || null)
+        .attr('dy', yLeftOffsetY ? `${yLeftOffsetY}px` : null);
 
       // Y Axis Left title - position based on left margin to avoid overlap
       yAxisLeftGroup.selectAll('.axis-title').remove();
@@ -611,13 +617,17 @@ const ComboChart = {
         .attr('stroke', yAxisRightConfig.tickColor || '#999999');
 
       // Style labels
+      const yRightOffsetX = yAxisRightConfig.labelOffsetX || 0;
+      const yRightOffsetY = yAxisRightConfig.labelOffsetY || 0;
       yAxisRightGroup.selectAll('.tick text')
         .style('display', yAxisRightConfig.showLabels !== false ? null : 'none')
         .style('font-size', `${yAxisFont.size || 12}px`)
         .style('font-family', yAxisFont.family || null)
         .style('font-weight', yAxisFont.weight || 400)
         .style('fill', yAxisFont.color || '#666666')
-        .style('font-style', this.getFontStyle(yAxisFont));
+        .style('font-style', this.getFontStyle(yAxisFont))
+        .attr('dx', yRightOffsetX || null)
+        .attr('dy', yRightOffsetY ? `${yRightOffsetY}px` : null);
 
       // Y Axis Right title - position based on right margin to avoid overlap
       yAxisRightGroup.selectAll('.axis-title').remove();
@@ -1149,15 +1159,15 @@ const ComboChart = {
     // Reset container layout classes
     if (chartContainer) {
       chartContainer.style.flexDirection = '';
-      chartContainer.classList.remove('legend-layout-row');
+      chartContainer.classList.remove('legend-layout-right', 'legend-layout-left');
     }
 
     if (position === 'right') {
       legendContainer.classed('legend-right', true);
-      if (chartContainer) chartContainer.classList.add('legend-layout-row');
+      if (chartContainer) chartContainer.classList.add('legend-layout-right');
     } else if (position === 'left') {
       legendContainer.classed('legend-left', true);
-      if (chartContainer) chartContainer.classList.add('legend-layout-row');
+      if (chartContainer) chartContainer.classList.add('legend-layout-left');
     } else if (position === 'top') {
       legendContainer.classed('legend-top', true);
     } else {

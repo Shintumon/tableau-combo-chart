@@ -393,25 +393,51 @@ html, body {
   order: 1;
 }
 
-/* Row layout for left/right legend */
-.chart-container.legend-layout-row {
-  flex-wrap: wrap;
-  flex-direction: row;
+/* Grid layout for left/right legend - ensures proper height distribution */
+.chart-container.legend-layout-right {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
 }
 
-.chart-container.legend-layout-row .chart-header {
-  flex: 0 0 100%;
-  order: -1;
+.chart-container.legend-layout-right .chart-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
 }
 
-.chart-container.legend-layout-row .chart-area {
-  flex: 1 1 0%;
+.chart-container.legend-layout-right .chart-area {
+  grid-column: 1;
+  grid-row: 2;
   min-width: 0;
-  order: 1;
+  min-height: 0;
 }
 
-.chart-container.legend-layout-row .legend {
-  flex: 0 0 auto;
+.chart-container.legend-layout-right .legend {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.chart-container.legend-layout-left {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+.chart-container.legend-layout-left .chart-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.chart-container.legend-layout-left .chart-area {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chart-container.legend-layout-left .legend {
+  grid-column: 1;
+  grid-row: 2;
 }
 
 /* Error State */

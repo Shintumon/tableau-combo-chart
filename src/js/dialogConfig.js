@@ -532,6 +532,8 @@
     elements.xAxisCurrencySymbol = document.getElementById('x-axis-currency-symbol');
     elements.xAxisFormatOptions = document.getElementById('x-axis-format-options');
     elements.xAxisCurrencyGroup = document.getElementById('x-axis-currency-group');
+    elements.xAxisLabelOffsetX = document.getElementById('x-axis-label-offset-x');
+    elements.xAxisLabelOffsetY = document.getElementById('x-axis-label-offset-y');
 
     // Y-Axis Left visibility toggles
     elements.yAxisLeftShowTitle = document.getElementById('y-axis-left-show-title');
@@ -549,6 +551,10 @@
     elements.yAxisRightShowLabels = document.getElementById('y-axis-right-show-labels');
     elements.yAxisRightShowTicks = document.getElementById('y-axis-right-show-ticks');
     elements.yAxisRightShowLine = document.getElementById('y-axis-right-show-line');
+    elements.yAxisLeftLabelOffsetX = document.getElementById('y-axis-left-label-offset-x');
+    elements.yAxisLeftLabelOffsetY = document.getElementById('y-axis-left-label-offset-y');
+    elements.yAxisRightLabelOffsetX = document.getElementById('y-axis-right-label-offset-x');
+    elements.yAxisRightLabelOffsetY = document.getElementById('y-axis-right-label-offset-y');
 
     // Bar 1 label font
     elements.bar1LabelFontFamily = document.getElementById('bar1-label-font-family');
@@ -1393,6 +1399,8 @@
     safeSetValue(elements.xAxisDecimals, config.xAxis.decimals || 0);
     safeSetValue(elements.xAxisCurrencySymbol, config.xAxis.currencySymbol || '$');
     updateFormatOptionsVisibility('x-axis', config.xAxis.format || 'auto');
+    safeSetValue(elements.xAxisLabelOffsetX, config.xAxis.labelOffsetX || 0);
+    safeSetValue(elements.xAxisLabelOffsetY, config.xAxis.labelOffsetY || 0);
 
     // Y-axis left settings
     safeSetChecked(elements.yAxisLeftShow, config.yAxisLeft.show);
@@ -1405,6 +1413,8 @@
     safeSetChecked(elements.yAxisLeftShowTicks, config.yAxisLeft.showTickMarks !== false);
     safeSetChecked(elements.yAxisLeftShowLine, config.yAxisLeft.showAxisLine !== false);
     safeSetValue(elements.yAxisLineColor, config.yAxisLeft.lineColor || '#999999');
+    safeSetValue(elements.yAxisLeftLabelOffsetX, config.yAxisLeft.labelOffsetX || 0);
+    safeSetValue(elements.yAxisLeftLabelOffsetY, config.yAxisLeft.labelOffsetY || 0);
 
     // Y-axis right settings
     safeSetChecked(elements.yAxisRightShow, config.yAxisRight.show);
@@ -1416,6 +1426,8 @@
     safeSetChecked(elements.yAxisRightShowLabels, config.yAxisRight.showLabels !== false);
     safeSetChecked(elements.yAxisRightShowTicks, config.yAxisRight.showTickMarks !== false);
     safeSetChecked(elements.yAxisRightShowLine, config.yAxisRight.showAxisLine !== false);
+    safeSetValue(elements.yAxisRightLabelOffsetX, config.yAxisRight.labelOffsetX || 0);
+    safeSetValue(elements.yAxisRightLabelOffsetY, config.yAxisRight.labelOffsetY || 0);
 
     // Include zero
     safeSetChecked(elements.yAxisLeftIncludeZero, config.yAxisLeft.includeZero !== false);
@@ -1919,6 +1931,16 @@
         config.xAxis.currencySymbol = e.target.value;
       });
     }
+    if (elements.xAxisLabelOffsetX) {
+      elements.xAxisLabelOffsetX.addEventListener('input', (e) => {
+        config.xAxis.labelOffsetX = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.xAxisLabelOffsetY) {
+      elements.xAxisLabelOffsetY.addEventListener('input', (e) => {
+        config.xAxis.labelOffsetY = parseInt(e.target.value) || 0;
+      });
+    }
 
     // Y-Axis font settings
     if (elements.yAxisFontFamily) {
@@ -2007,6 +2029,27 @@
     if (elements.yAxisRightIncludeZero) {
       elements.yAxisRightIncludeZero.addEventListener('change', (e) => {
         config.yAxisRight.includeZero = e.target.checked;
+      });
+    }
+    // Y-axis label offsets
+    if (elements.yAxisLeftLabelOffsetX) {
+      elements.yAxisLeftLabelOffsetX.addEventListener('input', (e) => {
+        config.yAxisLeft.labelOffsetX = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.yAxisLeftLabelOffsetY) {
+      elements.yAxisLeftLabelOffsetY.addEventListener('input', (e) => {
+        config.yAxisLeft.labelOffsetY = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.yAxisRightLabelOffsetX) {
+      elements.yAxisRightLabelOffsetX.addEventListener('input', (e) => {
+        config.yAxisRight.labelOffsetX = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.yAxisRightLabelOffsetY) {
+      elements.yAxisRightLabelOffsetY.addEventListener('input', (e) => {
+        config.yAxisRight.labelOffsetY = parseInt(e.target.value) || 0;
       });
     }
 

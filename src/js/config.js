@@ -151,7 +151,9 @@ const Config = {
       decimals: 0,
       currencySymbol: '$',
       tickColor: '#999999',
-      lineColor: '#999999'
+      lineColor: '#999999',
+      labelOffsetX: 0,
+      labelOffsetY: 0
     },
 
     yAxisLeft: {
@@ -168,7 +170,9 @@ const Config = {
       currencySymbol: '$',
       includeZero: true,
       tickColor: '#999999',
-      lineColor: '#999999'
+      lineColor: '#999999',
+      labelOffsetX: 0,
+      labelOffsetY: 0
     },
 
     yAxisRight: {
@@ -185,7 +189,9 @@ const Config = {
       currencySymbol: '$',
       includeZero: true,
       tickColor: '#999999',
-      lineColor: '#999999'
+      lineColor: '#999999',
+      labelOffsetX: 0,
+      labelOffsetY: 0
     },
 
     grid: {
