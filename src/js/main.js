@@ -37,6 +37,13 @@
   async function init() {
     log('Combo Chart: Initializing...');
 
+    // Check if running inside Tableau
+    if (typeof tableau === 'undefined' || !tableau.extensions) {
+      log('Combo Chart: Not running inside Tableau');
+      showStandaloneMessage();
+      return;
+    }
+
     try {
       // Initialize Tableau Extensions API for Viz Extensions
       await tableau.extensions.initializeAsync({ configure: openConfigDialog });
@@ -62,8 +69,9 @@
       isInitialized = true;
       log('Combo Chart: Initialization complete');
     } catch (error) {
-      log('ERROR: Initialization error: ' + (error.message || error.toString()));
-      showError(`Failed to initialize extension: ${error.message}`);
+      const errorMsg = error.message || error.toString() || 'Unknown error';
+      log('ERROR: Initialization error: ' + errorMsg);
+      showError(`Failed to initialize extension: ${errorMsg}`);
     }
   }
 
@@ -143,7 +151,9 @@
       tableau.extensions.settings.erase('dialogOpenSection');
     }
 
-    const dialogUrl = 'http://localhost:8765/src/dialog.html';
+    // Use relative URL so it works both locally and hosted
+    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
+    const dialogUrl = baseUrl + '/dialog.html';
     log('Combo Chart: Dialog URL: ' + dialogUrl);
 
     try {
@@ -242,7 +252,32 @@
     configRequiredEl.classList.add('hidden');
     chartContainerEl.classList.add('hidden');
     errorContainerEl.classList.remove('hidden');
-    errorTextEl.textContent = message;
+    errorTextEl.textContent = message || 'An unknown error occurred';
+  }
+
+  /**
+   * Show message when viewed outside Tableau
+   */
+  function showStandaloneMessage() {
+    loadingEl.classList.add('hidden');
+    configRequiredEl.classList.add('hidden');
+    chartContainerEl.classList.add('hidden');
+    errorContainerEl.classList.remove('hidden');
+
+    errorTextEl.innerHTML = `
+      <strong>✓ Extension Loaded Successfully!</strong><br><br>
+      This extension must be used inside Tableau.<br><br>
+      <strong>To use:</strong><br>
+      1. Open Tableau Desktop or Tableau Cloud<br>
+      2. Create or open a worksheet<br>
+      3. Go to Marks → Add Extension<br>
+      4. Load the .trex file pointing to this URL
+    `;
+
+    // Hide retry button for standalone view
+    if (retryBtn) {
+      retryBtn.style.display = 'none';
+    }
   }
 
   /**
