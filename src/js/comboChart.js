@@ -193,6 +193,7 @@ const ComboChart = {
     // Sort data if configured
     let sortedData = [...this.data];
     const sortOrder = this.config.xAxis?.sort || 'default';
+    console.log('ComboChart.createScales: sortOrder =', sortOrder);
 
     if (sortOrder === 'asc' || sortOrder === 'desc') {
       // Try to detect if values are dates and sort accordingly
@@ -230,8 +231,10 @@ const ComboChart = {
       }
     } else if (sortOrder === 'reverse') {
       // Reverse the original data order
+      console.log('ComboChart.createScales: Reversing data order');
       sortedData.reverse();
     }
+    console.log('ComboChart.createScales: First item after sort =', sortedData[0]?.dimension);
     this.data = sortedData;
 
     // X Scale (band scale for categories)

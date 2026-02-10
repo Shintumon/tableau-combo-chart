@@ -222,12 +222,49 @@
    */
   function loadConfig() {
     const settings = tableau.extensions.settings.getAll();
+    const defaults = getDefaultConfig();
+
     if (settings.comboChartConfig) {
-      config = JSON.parse(settings.comboChartConfig);
+      const saved = JSON.parse(settings.comboChartConfig);
+      // Deep merge saved config with defaults to ensure all properties exist
+      config = deepMerge(defaults, saved);
     } else {
       // Use defaults
-      config = getDefaultConfig();
+      config = defaults;
     }
+
+    // Ensure xAxis has all required properties
+    if (!config.xAxis) config.xAxis = {};
+    if (config.xAxis.sort === undefined) config.xAxis.sort = 'default';
+    if (config.xAxis.showTitle === undefined) config.xAxis.showTitle = true;
+    if (config.xAxis.showLabels === undefined) config.xAxis.showLabels = true;
+    if (config.xAxis.showTickMarks === undefined) config.xAxis.showTickMarks = true;
+    if (config.xAxis.showAxisLine === undefined) config.xAxis.showAxisLine = true;
+    if (config.xAxis.align === undefined) config.xAxis.align = 'center';
+    if (config.xAxis.maxWidth === undefined) config.xAxis.maxWidth = 'none';
+    if (config.xAxis.lineColor === undefined) config.xAxis.lineColor = '#999999';
+    if (config.xAxis.tickColor === undefined) config.xAxis.tickColor = '#999999';
+
+    console.log('DialogConfig: Loaded config with xAxis.sort =', config.xAxis.sort);
+  }
+
+  /**
+   * Deep merge two objects
+   */
+  function deepMerge(defaults, overrides) {
+    const result = JSON.parse(JSON.stringify(defaults));
+
+    for (const key in overrides) {
+      if (overrides.hasOwnProperty(key)) {
+        if (typeof overrides[key] === 'object' && overrides[key] !== null && !Array.isArray(overrides[key])) {
+          result[key] = deepMerge(result[key] || {}, overrides[key]);
+        } else {
+          result[key] = overrides[key];
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -250,7 +287,7 @@
       animation: { enabled: true, duration: 500, easing: 'easeCubicOut' },
       font: { family: defaultFont, titleWeight: 600, labelWeight: 400 },
       axisMode: 'dual',
-      xAxis: { show: true, title: '', fontSize: 12, rotation: 0 },
+      xAxis: { show: true, title: '', fontSize: 12, rotation: 0, sort: 'default', showTitle: true, showLabels: true, showTickMarks: true, showAxisLine: true, align: 'center', maxWidth: 'none', lineColor: '#999999', tickColor: '#999999' },
       yAxisLeft: { show: true, title: '', min: null, max: null, format: 'auto' },
       yAxisRight: { show: true, title: '', min: null, max: null, format: 'auto' },
       grid: { horizontal: true, vertical: false, color: '#e0e0e0', opacity: 0.5 },
@@ -1447,6 +1484,7 @@
     if (elements.xAxisSort) {
       elements.xAxisSort.addEventListener('change', (e) => {
         config.xAxis.sort = e.target.value;
+        console.log('DialogConfig: X-Axis sort changed to:', e.target.value);
       });
     }
     if (elements.xAxisMaxWidth) {
@@ -1865,8 +1903,10 @@
     btn.classList.add('btn-applying');
 
     try {
+      console.log('DialogConfig: Saving config with xAxis.sort =', config.xAxis?.sort);
       tableau.extensions.settings.set('comboChartConfig', JSON.stringify(config));
       await tableau.extensions.settings.saveAsync();
+      console.log('DialogConfig: Settings saved successfully');
 
       // Show success feedback
       btn.textContent = 'Applied!';
