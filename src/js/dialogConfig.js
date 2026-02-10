@@ -473,6 +473,7 @@
     elements.lineLabelColor = document.getElementById('line-label-color');
     elements.showLegend = document.getElementById('show-legend');
     elements.legendPosition = document.getElementById('legend-position');
+    elements.legendAlign = document.getElementById('legend-align');
     elements.legendPadding = document.getElementById('legend-padding');
     elements.legendGap = document.getElementById('legend-gap');
     elements.legendBar1Label = document.getElementById('legend-bar1-label');
@@ -1487,6 +1488,7 @@
     // Legend
     safeSetChecked(elements.showLegend, config.legend.show);
     safeSetValue(elements.legendPosition, config.legend.position);
+    safeSetValue(elements.legendAlign, config.legend.align || 'center');
     safeSetValue(elements.legendPadding, config.legend.padding || 14);
     safeSetValue(elements.legendGap, config.legend.gap || 24);
     safeSetValue(elements.legendBar1Label, config.legend.bar1Label || '');
@@ -1715,6 +1717,7 @@
       updateFormatOptionsVisibility('line-label', e.target.value);
     });
     safeAddListener(elements.legendPosition, 'change', (e) => config.legend.position = e.target.value);
+    safeAddListener(elements.legendAlign, 'change', (e) => config.legend.align = e.target.value);
     safeAddListener(elements.legendPadding, 'input', (e) => config.legend.padding = parseInt(e.target.value) || 14);
     safeAddListener(elements.legendGap, 'input', (e) => config.legend.gap = parseInt(e.target.value) || 24);
     safeAddListener(elements.legendBar1Label, 'change', (e) => config.legend.bar1Label = e.target.value);

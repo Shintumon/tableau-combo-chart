@@ -154,7 +154,7 @@ const Config = {
       tickColor: '#999999',
       lineColor: '#999999',
       labelOffsetX: 0,
-      labelOffsetY: 0
+      labelOffsetY: 10
     },
 
     yAxisLeft: {
@@ -215,7 +215,7 @@ const Config = {
     barLabels: {
       show: false,
       position: 'top', // 'top', 'inside', 'center'
-      fontSize: 10,
+      fontSize: 12,
       color: '#333333',
       format: 'auto',
       decimals: 0,
@@ -227,7 +227,7 @@ const Config = {
     lineLabels: {
       show: false,
       position: 'top', // 'top', 'bottom', 'left', 'right', 'center'
-      fontSize: 10,
+      fontSize: 12,
       color: '#333333',
       format: 'auto',
       decimals: 0,
@@ -239,6 +239,7 @@ const Config = {
     legend: {
       show: true,
       position: 'bottom', // 'bottom', 'top', 'right', 'left'
+      align: 'center', // 'left', 'center', 'right' - alignment of legend items
       bar1Label: '',  // Custom label for bar 1 (empty = use measure name)
       bar2Label: '',  // Custom label for bar 2
       lineLabel: '',  // Custom label for line
@@ -301,28 +302,28 @@ const Config = {
     },
     barLabelFont: {
       family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      size: 10,
+      size: 12,
       weight: 400,
       color: '#333333',
       italic: false
     },
     bar1LabelFont: {
       family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      size: 10,
+      size: 12,
       weight: 400,
       color: '#333333',
       italic: false
     },
     bar2LabelFont: {
       family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      size: 10,
+      size: 12,
       weight: 400,
       color: '#333333',
       italic: false
     },
     lineLabelFont: {
       family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      size: 10,
+      size: 12,
       weight: 400,
       color: '#333333',
       italic: false
@@ -473,19 +474,18 @@ const Config = {
       }
       if (workbookFont.worksheetFontSize) {
         const bodySize = workbookFont.worksheetFontSize;
-        const labelSize = Math.max(8, bodySize - 2);
         this.defaults.xAxisFont.size = bodySize;
         this.defaults.yAxisFont.size = bodySize;
         this.defaults.legendFont.size = bodySize;
         this.defaults.tooltipFont.size = bodySize;
         this.defaults.xAxis.fontSize = bodySize;
         this.defaults.tooltip.fontSize = bodySize;
-        this.defaults.barLabelFont.size = labelSize;
-        this.defaults.bar1LabelFont.size = labelSize;
-        this.defaults.bar2LabelFont.size = labelSize;
-        this.defaults.lineLabelFont.size = labelSize;
-        this.defaults.barLabels.fontSize = labelSize;
-        this.defaults.lineLabels.fontSize = labelSize;
+        this.defaults.barLabelFont.size = bodySize;
+        this.defaults.bar1LabelFont.size = bodySize;
+        this.defaults.bar2LabelFont.size = bodySize;
+        this.defaults.lineLabelFont.size = bodySize;
+        this.defaults.barLabels.fontSize = bodySize;
+        this.defaults.lineLabels.fontSize = bodySize;
       }
     }
     this.current = JSON.parse(JSON.stringify(this.defaults));
@@ -521,16 +521,15 @@ const Config = {
     const defaultFont = (workbookFont && workbookFont.family) || "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     const titleSize = (workbookFont && workbookFont.worksheetTitleFontSize) || 18;
     const bodySize = (workbookFont && workbookFont.worksheetFontSize) || 12;
-    const labelSize = Math.max(8, bodySize - 2);
     const fontDefaults = {
       titleFont: { family: defaultFont, size: titleSize, weight: 600, color: '#333333', italic: false },
       xAxisFont: { family: defaultFont, size: bodySize, weight: 400, color: '#666666', italic: false },
       yAxisFont: { family: defaultFont, size: bodySize, weight: 400, color: '#666666', italic: false },
       legendFont: { family: defaultFont, size: bodySize, weight: 400, color: '#333333', italic: false },
-      barLabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
-      bar1LabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
-      bar2LabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
-      lineLabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      barLabelFont: { family: defaultFont, size: bodySize, weight: 400, color: '#333333', italic: false },
+      bar1LabelFont: { family: defaultFont, size: bodySize, weight: 400, color: '#333333', italic: false },
+      bar2LabelFont: { family: defaultFont, size: bodySize, weight: 400, color: '#333333', italic: false },
+      lineLabelFont: { family: defaultFont, size: bodySize, weight: 400, color: '#333333', italic: false },
       tooltipFont: { family: defaultFont, size: bodySize, weight: 400, color: '#ffffff', italic: false }
     };
 

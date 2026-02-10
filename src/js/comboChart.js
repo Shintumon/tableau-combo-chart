@@ -1166,6 +1166,12 @@ const ComboChart = {
     const bgColor = legendConfig.bgColor || 'transparent';
     const legendPadding = legendConfig.padding !== undefined ? legendConfig.padding : 14;
     const legendGap = legendConfig.gap !== undefined ? legendConfig.gap : 24;
+    const legendAlign = legendConfig.align || 'center';
+
+    // Map alignment to CSS flex values
+    const alignMap = { 'left': 'flex-start', 'center': 'center', 'right': 'flex-end' };
+    const flexAlign = alignMap[legendAlign] || 'center';
+
     legendContainer
       .style('background-color', bgColor)
       .style('padding', `${legendPadding}px`)
@@ -1197,6 +1203,17 @@ const ComboChart = {
     } else {
       // Bottom (default)
       legendContainer.classed('legend-bottom', true);
+    }
+
+    // Apply legend alignment
+    if (position === 'left' || position === 'right') {
+      // Column layout: align-items controls horizontal alignment
+      legendContainer.style('align-items', flexAlign);
+      legendContainer.style('justify-content', null);
+    } else {
+      // Row layout: justify-content controls horizontal alignment
+      legendContainer.style('justify-content', flexAlign);
+      legendContainer.style('align-items', 'center');
     }
 
     // Trigger re-render if legend position changed (to recalculate SVG dimensions)
