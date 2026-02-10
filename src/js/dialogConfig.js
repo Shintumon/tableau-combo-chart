@@ -668,13 +668,10 @@
       console.log('Local Font Access API not available:', e.message);
     }
 
-    // Fallback: use hardcoded list, filter to available fonts
-    const available = fallbackFontFamilies.filter(f =>
-      f.primary === 'system-ui' || isFontAvailable(f.primary)
-    );
-    systemFontsCache = available;
-    console.log(`Font fallback list: ${available.length} available fonts`);
-    return available;
+    // Fallback: show all common fonts (document.fonts.check() is unreliable for system fonts)
+    systemFontsCache = fallbackFontFamilies;
+    console.log(`Font fallback list: ${fallbackFontFamilies.length} fonts`);
+    return fallbackFontFamilies;
   }
 
   /**
