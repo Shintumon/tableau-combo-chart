@@ -334,7 +334,7 @@ const Config = {
             const css = sheet.cssProperties || {};
 
             const fontInfo = {
-              fontName: css.fontName || css['font-family'] || null,
+              fontName: css.fontName || css.fontFamily || css['font-family'] || null,
               fontSize: css.fontSize || css['font-size'] || null,
               fontWeight: css.isFontBold ? 'bold' : (css['font-weight'] || 'normal'),
               fontStyle: css.isFontItalic ? 'italic' : 'normal',

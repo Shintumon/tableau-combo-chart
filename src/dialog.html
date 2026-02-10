@@ -1078,11 +1078,12 @@
 
   <!-- Debug Console Panel -->
   <div id="debug-panel" class="debug-panel hidden">
-    <div class="debug-header">
-      <span>Debug Console (Dialog)</span>
+    <div class="debug-header" id="debug-header" style="cursor: move;">
+      <span>Debug Console (drag to move)</span>
       <div class="debug-actions">
         <button id="debug-clear" class="debug-btn" title="Clear">Clear</button>
         <button id="debug-copy" class="debug-btn" title="Copy">Copy</button>
+        <button id="debug-hide" class="debug-btn" title="Hide debug mode (Ctrl+Shift+D to restore)">Hide</button>
         <button id="debug-close" class="debug-btn" title="Close">×</button>
       </div>
     </div>
@@ -1100,9 +1101,14 @@
       const debugClear = document.getElementById('debug-clear');
       const debugCopy = document.getElementById('debug-copy');
       const debugClose = document.getElementById('debug-close');
+      const debugHide = document.getElementById('debug-hide');
+      const debugHeader = document.getElementById('debug-header');
 
       let logs = [];
       const MAX_LOGS = 200;
+      let isDragging = false;
+      let dragOffsetX = 0;
+      let dragOffsetY = 0;
 
       function addLog(type, ...args) {
         const timestamp = new Date().toLocaleTimeString();
@@ -1172,6 +1178,38 @@
 
       debugClose.addEventListener('click', () => {
         debugPanel.classList.add('hidden');
+      });
+
+      // Hide button - completely hides debug mode (use Ctrl+Shift+D to restore)
+      debugHide.addEventListener('click', () => {
+        debugPanel.classList.add('hidden');
+        debugToggle.classList.add('hidden');
+        console.log('Debug mode hidden. Press Ctrl+Shift+D to restore.');
+      });
+
+      // Drag functionality
+      debugHeader.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking buttons
+        isDragging = true;
+        const rect = debugPanel.getBoundingClientRect();
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+        debugPanel.style.transition = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const x = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - dragOffsetX));
+        const y = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffsetY));
+        debugPanel.style.left = x + 'px';
+        debugPanel.style.top = y + 'px';
+        debugPanel.style.right = 'auto';
+        debugPanel.style.bottom = 'auto';
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+        debugPanel.style.transition = '';
       });
 
       debugClear.addEventListener('click', () => {
