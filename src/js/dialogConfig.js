@@ -1095,6 +1095,7 @@
       });
 
       populateFieldSelects();
+      updateXAxisFormatOptions();
     } catch (error) {
       console.error('Error loading columns:', error);
     }
@@ -1587,6 +1588,7 @@
     safeAddListener(elements.dimensionSelect, 'change', (e) => {
       config.dimension = e.target.value;
       updateFieldLabels();
+      updateXAxisFormatOptions();
     });
     safeAddListener(elements.bar1Measure, 'change', (e) => {
       config.bar1Measure = e.target.value;
@@ -2453,16 +2455,38 @@
     const optionsRow = document.getElementById(`${prefix}-format-options`);
     const currencyGroup = document.getElementById(`${prefix}-currency-group`);
 
+    // Date formats don't need decimal/currency options
+    const isDateFormat = format && format.startsWith('date-') || format === 'month-year' || format === 'month-only' || format === 'year-only' || format === 'day-month' || format === 'quarter' || format === 'iso';
+
     if (optionsRow) {
-      // Show decimals/currency options for non-auto formats
-      const showOptions = format !== 'auto';
+      const showOptions = format !== 'auto' && !isDateFormat;
       optionsRow.style.display = showOptions ? 'flex' : 'none';
     }
     if (currencyGroup) {
-      // Show currency symbol input only for currency or custom format
       const showCurrency = format === 'currency' || format === 'custom';
       currencyGroup.style.display = showCurrency ? 'block' : 'none';
     }
+  }
+
+  /**
+   * Update X-axis format dropdown to show date or number options based on dimension type
+   */
+  function updateXAxisFormatOptions() {
+    const dateGroup = document.getElementById('x-axis-date-formats');
+    const numberGroup = document.getElementById('x-axis-number-formats');
+    if (!dateGroup) return;
+
+    // Find the selected dimension's data type
+    const selectedDim = config.dimension;
+    let dimType = 'string';
+    if (selectedDim && columns && columns.dimensions) {
+      const dimCol = columns.dimensions.find(d => d.fieldName === selectedDim);
+      if (dimCol) dimType = dimCol.dataType;
+    }
+
+    const isDate = dimType === 'date' || dimType === 'date-time';
+    dateGroup.style.display = isDate ? '' : 'none';
+    if (numberGroup) numberGroup.style.display = isDate ? 'none' : '';
   }
 
   /**

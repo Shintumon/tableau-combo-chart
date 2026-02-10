@@ -24,6 +24,7 @@ const ComboChart = {
   originalData: null,  // Store original unsorted data to prevent double-reverse on resize
   fieldNames: null,
   detectedFormats: null,
+  dimensionType: 'string',
   config: null,
 
   // Animation state
@@ -435,7 +436,9 @@ const ComboChart = {
       // Apply X-axis label formatting if not 'auto'
       const xFormat = xAxisConfig.format || 'auto';
       if (xFormat !== 'auto') {
-        const xFormatter = Config.getFormatter(xFormat, xAxisConfig.decimals, xAxisConfig.currencySymbol);
+        const isDate = this.dimensionType === 'date' || this.dimensionType === 'date-time';
+        const dateFormatter = isDate ? Config.getDateFormatter(xFormat) : null;
+        const numFormatter = !isDate ? Config.getFormatter(xFormat, xAxisConfig.decimals, xAxisConfig.currencySymbol) : null;
         // Build lookup from display text → raw value
         const rawLookup = {};
         this.data.forEach(d => { rawLookup[d.dimension] = d.dimensionRaw; });
@@ -443,18 +446,26 @@ const ComboChart = {
           const el = d3.select(this);
           const label = el.text();
           const raw = rawLookup[label];
-          if (raw !== null && raw !== undefined && !isNaN(Number(raw))) {
-            el.text(xFormatter(Number(raw)));
+          if (raw !== null && raw !== undefined) {
+            if (dateFormatter) {
+              // Parse date from raw value and format
+              const date = new Date(raw);
+              if (!isNaN(date.getTime())) {
+                el.text(dateFormatter(date));
+              }
+            } else if (numFormatter && !isNaN(Number(raw))) {
+              el.text(numFormatter(Number(raw)));
+            }
           }
         });
       }
 
       xAxisGroup.selectAll('.tick text')
         .style('display', xAxisConfig.showLabels !== false ? null : 'none')
-        .attr('font-size', xAxisFont.size || this.config.xAxis.fontSize)
-        .attr('font-family', xAxisFont.family || null)
-        .attr('font-weight', xAxisFont.weight || 400)
-        .attr('fill', xAxisFont.color || '#666666')
+        .style('font-size', `${xAxisFont.size || this.config.xAxis.fontSize || 12}px`)
+        .style('font-family', xAxisFont.family || null)
+        .style('font-weight', xAxisFont.weight || 400)
+        .style('fill', xAxisFont.color || '#666666')
         .style('font-style', this.getFontStyle(xAxisFont))
         .attr('transform', `rotate(${rotation})`)
         .attr('dx', dx)
@@ -502,9 +513,9 @@ const ComboChart = {
             .attr('x', this.width / 2)
             .attr('y', titleYOffset)
             .attr('text-anchor', 'middle')
-            .attr('font-family', xAxisFont.family || null)
-            .attr('font-weight', xAxisFont.weight || 400)
-            .attr('fill', xAxisFont.color || '#666666')
+            .style('font-family', xAxisFont.family || null)
+            .style('font-weight', xAxisFont.weight || 400)
+            .style('fill', xAxisFont.color || '#666666')
             .style('font-style', this.getFontStyle(xAxisFont))
             .text(xTitle);
         }
@@ -542,10 +553,10 @@ const ComboChart = {
       // Style labels
       yAxisLeftGroup.selectAll('.tick text')
         .style('display', yAxisLeftConfig.showLabels !== false ? null : 'none')
-        .attr('font-size', yAxisFont.size || 12)
-        .attr('font-family', yAxisFont.family || null)
-        .attr('font-weight', yAxisFont.weight || 400)
-        .attr('fill', yAxisFont.color || '#666666')
+        .style('font-size', `${yAxisFont.size || 12}px`)
+        .style('font-family', yAxisFont.family || null)
+        .style('font-weight', yAxisFont.weight || 400)
+        .style('fill', yAxisFont.color || '#666666')
         .style('font-style', this.getFontStyle(yAxisFont));
 
       // Y Axis Left title - position based on left margin to avoid overlap
@@ -562,9 +573,9 @@ const ComboChart = {
           .attr('x', -this.height / 2)
           .attr('y', titleXOffset)
           .attr('text-anchor', 'middle')
-          .attr('font-family', yAxisFont.family || null)
-          .attr('font-weight', yAxisFont.weight || 400)
-          .attr('fill', yAxisFont.color || '#666666')
+          .style('font-family', yAxisFont.family || null)
+          .style('font-weight', yAxisFont.weight || 400)
+          .style('fill', yAxisFont.color || '#666666')
           .style('font-style', this.getFontStyle(yAxisFont))
           .text(leftTitle);
       }
@@ -602,10 +613,10 @@ const ComboChart = {
       // Style labels
       yAxisRightGroup.selectAll('.tick text')
         .style('display', yAxisRightConfig.showLabels !== false ? null : 'none')
-        .attr('font-size', yAxisFont.size || 12)
-        .attr('font-family', yAxisFont.family || null)
-        .attr('font-weight', yAxisFont.weight || 400)
-        .attr('fill', yAxisFont.color || '#666666')
+        .style('font-size', `${yAxisFont.size || 12}px`)
+        .style('font-family', yAxisFont.family || null)
+        .style('font-weight', yAxisFont.weight || 400)
+        .style('fill', yAxisFont.color || '#666666')
         .style('font-style', this.getFontStyle(yAxisFont));
 
       // Y Axis Right title - position based on right margin to avoid overlap
@@ -621,9 +632,9 @@ const ComboChart = {
           .attr('x', this.height / 2)
           .attr('y', titleXOffset)
           .attr('text-anchor', 'middle')
-          .attr('font-family', yAxisFont.family || null)
-          .attr('font-weight', yAxisFont.weight || 400)
-          .attr('fill', yAxisFont.color || '#666666')
+          .style('font-family', yAxisFont.family || null)
+          .style('font-weight', yAxisFont.weight || 400)
+          .style('fill', yAxisFont.color || '#666666')
           .style('font-style', this.getFontStyle(yAxisFont))
           .text(rightTitle);
       }
@@ -1003,10 +1014,10 @@ const ComboChart = {
           return baseY + barOffsetY;
         })
         .attr('text-anchor', 'middle')
-        .attr('font-size', bar1FontSize)
-        .attr('font-family', bar1FontFamily)
-        .attr('font-weight', bar1FontWeight)
-        .attr('fill', bar1FontColor)
+        .style('font-size', `${bar1FontSize}px`)
+        .style('font-family', bar1FontFamily)
+        .style('font-weight', bar1FontWeight)
+        .style('fill', bar1FontColor)
         .style('font-style', bar1FontStyle)
         .text(d => barFormatter ? barFormatter(d.bar1Value) : d.bar1Formatted);
 
@@ -1036,10 +1047,10 @@ const ComboChart = {
           return baseY + barOffsetY;
         })
         .attr('text-anchor', 'middle')
-        .attr('font-size', bar2FontSize)
-        .attr('font-family', bar2FontFamily)
-        .attr('font-weight', bar2FontWeight)
-        .attr('fill', bar2FontColor)
+        .style('font-size', `${bar2FontSize}px`)
+        .style('font-family', bar2FontFamily)
+        .style('font-weight', bar2FontWeight)
+        .style('fill', bar2FontColor)
         .style('font-style', bar2FontStyle)
         .text(d => barFormatter ? barFormatter(d.bar2Value) : d.bar2Formatted);
     }
@@ -1096,10 +1107,10 @@ const ComboChart = {
             default: return 'middle';
           }
         })
-        .attr('font-size', lineFontSize)
-        .attr('font-family', lineFontFamily)
-        .attr('font-weight', lineFontWeight)
-        .attr('fill', lineFontColor)
+        .style('font-size', `${lineFontSize}px`)
+        .style('font-family', lineFontFamily)
+        .style('font-weight', lineFontWeight)
+        .style('fill', lineFontColor)
         .style('font-style', lineFontStyle)
         .text(d => lineFormatter ? lineFormatter(d.lineValue) : d.lineFormatted);
     }

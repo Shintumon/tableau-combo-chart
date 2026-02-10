@@ -144,13 +144,15 @@ const DataHandler = {
       };
       console.log('Detected Tableau formats:', detectedFormats);
 
-      // Get field names for labels
+      // Get field names and data types for labels
       const fieldNames = {
         dimension: dimIndex >= 0 ? columns[dimIndex].fieldName : 'Category',
         bar1: bar1Index >= 0 ? columns[bar1Index].fieldName : 'Bar 1',
         bar2: bar2Index >= 0 ? columns[bar2Index].fieldName : 'Bar 2',
         line: lineIndex >= 0 ? columns[lineIndex].fieldName : 'Line'
       };
+      const dimensionType = dimIndex >= 0 ? columns[dimIndex].dataType : 'string';
+      console.log('Dimension data type:', dimensionType);
 
       console.log('Field names:', fieldNames);
       console.log('Chart data sample:', chartData.slice(0, 3));
@@ -158,6 +160,7 @@ const DataHandler = {
       return {
         data: chartData,
         fieldNames: fieldNames,
+        dimensionType: dimensionType,
         detectedFormats: detectedFormats,
         hasAllFields: dimIndex >= 0 && bar1Index >= 0 && bar2Index >= 0 && lineIndex >= 0
       };

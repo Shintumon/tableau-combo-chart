@@ -525,12 +525,25 @@
             <label for="x-axis-format">Label Format</label>
             <select id="x-axis-format" class="form-control">
               <option value="auto">Auto (Tableau)</option>
-              <option value="number">Number (1,234)</option>
-              <option value="currency">Currency ($1,234)</option>
-              <option value="percent">Percent (12%)</option>
-              <option value="compact">Compact (1.2K)</option>
-              <option value="scientific">Scientific (1.23e+3)</option>
-              <option value="custom">Custom...</option>
+              <optgroup label="Date Formats" id="x-axis-date-formats" style="display:none;">
+                <option value="date-short">Short (31/01/2024)</option>
+                <option value="date-medium">Medium (Jan 31, 2024)</option>
+                <option value="date-long">Long (January 31, 2024)</option>
+                <option value="month-year">Month Year (Jan 2024)</option>
+                <option value="month-only">Month (January)</option>
+                <option value="year-only">Year (2024)</option>
+                <option value="day-month">Day Month (31 Jan)</option>
+                <option value="quarter">Quarter (Q1 2024)</option>
+                <option value="iso">ISO (2024-01-31)</option>
+              </optgroup>
+              <optgroup label="Number Formats" id="x-axis-number-formats">
+                <option value="number">Number (1,234)</option>
+                <option value="currency">Currency ($1,234)</option>
+                <option value="percent">Percent (12%)</option>
+                <option value="compact">Compact (1.2K)</option>
+                <option value="scientific">Scientific (1.23e+3)</option>
+                <option value="custom">Custom...</option>
+              </optgroup>
             </select>
           </div>
           <div class="form-row" id="x-axis-format-options" style="display:none;">

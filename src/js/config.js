@@ -675,6 +675,28 @@ const Config = {
   },
 
   /**
+   * Get date formatter based on format type
+   * Uses D3 time formatting on raw date values
+   */
+  getDateFormatter(format) {
+    const formatMap = {
+      'date-short': d3.timeFormat('%d/%m/%Y'),
+      'date-medium': d3.timeFormat('%b %d, %Y'),
+      'date-long': d3.timeFormat('%B %d, %Y'),
+      'month-year': d3.timeFormat('%b %Y'),
+      'month-only': d3.timeFormat('%B'),
+      'year-only': d3.timeFormat('%Y'),
+      'day-month': d3.timeFormat('%d %b'),
+      'quarter': (date) => {
+        const q = Math.ceil((date.getMonth() + 1) / 3);
+        return `Q${q} ${date.getFullYear()}`;
+      },
+      'iso': d3.timeFormat('%Y-%m-%d')
+    };
+    return formatMap[format] || null;
+  },
+
+  /**
    * Apply a color palette to the current configuration
    */
   applyColorPalette(paletteId) {

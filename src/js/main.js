@@ -107,6 +107,7 @@
 
       log('Combo Chart: Rendering with ' + result.data.length + ' rows');
       ComboChart.detectedFormats = result.detectedFormats || {};
+      ComboChart.dimensionType = result.dimensionType || 'string';
       ComboChart.render(result.data, result.fieldNames, Config.current);
       showChart();
     } catch (error) {
