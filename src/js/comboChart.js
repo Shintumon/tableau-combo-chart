@@ -200,7 +200,6 @@ const ComboChart = {
     const dataSource = this.originalData || this.data;
     let sortedData = [...dataSource];
     const sortOrder = this.config.xAxis?.sort || 'default';
-    console.log('ComboChart.createScales: sortOrder =', sortOrder);
 
     if (sortOrder === 'asc' || sortOrder === 'desc') {
       // Try to detect if values are dates and sort accordingly
@@ -238,10 +237,8 @@ const ComboChart = {
       }
     } else if (sortOrder === 'reverse') {
       // Reverse the original data order
-      console.log('ComboChart.createScales: Reversing data order');
       sortedData.reverse();
     }
-    console.log('ComboChart.createScales: First item after sort =', sortedData[0]?.dimension);
     this.data = sortedData;
 
     // X Scale (band scale for categories)
@@ -1167,11 +1164,7 @@ const ComboChart = {
   updateTitle() {
     const titleElement = document.getElementById('chart-title');
     if (this.config.title.show && titleElement) {
-      // DEBUG: Show sort value and first/last data items in title temporarily
-      const sortValue = this.config.xAxis?.sort || 'undefined';
-      const firstItem = this.data && this.data[0] ? this.data[0].dimension : 'no data';
-      const lastItem = this.data && this.data.length > 0 ? this.data[this.data.length - 1].dimension : 'no data';
-      titleElement.textContent = (this.config.title.text || 'Combo Chart') + ` [Sort: ${sortValue}, First: ${firstItem}, Last: ${lastItem}]`;
+      titleElement.textContent = this.config.title.text || 'Combo Chart';
       titleElement.style.display = 'block';
       titleElement.style.cursor = 'pointer';
 

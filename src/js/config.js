@@ -321,9 +321,7 @@ const Config = {
       const settings = tableau.extensions.settings.getAll();
       if (settings.comboChartConfig) {
         const saved = JSON.parse(settings.comboChartConfig);
-        console.log('Config.load: Saved xAxis.sort =', saved.xAxis?.sort);
         this.current = this.merge(this.defaults, saved);
-        console.log('Config.load: After merge xAxis.sort =', this.current.xAxis?.sort);
       } else {
         this.current = JSON.parse(JSON.stringify(this.defaults));
       }
