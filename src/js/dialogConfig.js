@@ -426,6 +426,7 @@
     elements.lineWidth = document.getElementById('line-width');
     elements.lineStyle = document.getElementById('line-style');
     elements.lineCurve = document.getElementById('line-curve');
+    elements.lineVerticalPosition = document.getElementById('line-vertical-position');
     elements.showPoints = document.getElementById('show-points');
     elements.pointSize = document.getElementById('point-size');
     elements.pointShape = document.getElementById('point-shape');
@@ -472,6 +473,8 @@
     elements.lineLabelColor = document.getElementById('line-label-color');
     elements.showLegend = document.getElementById('show-legend');
     elements.legendPosition = document.getElementById('legend-position');
+    elements.legendPadding = document.getElementById('legend-padding');
+    elements.legendGap = document.getElementById('legend-gap');
     elements.legendBar1Label = document.getElementById('legend-bar1-label');
     elements.legendBar2Label = document.getElementById('legend-bar2-label');
     elements.legendLineLabel = document.getElementById('legend-line-label');
@@ -1364,6 +1367,7 @@
     safeSetValue(elements.lineWidth, config.line.width);
     safeSetValue(elements.lineStyle, config.line.style);
     safeSetValue(elements.lineCurve, config.line.curve);
+    safeSetValue(elements.lineVerticalPosition, config.line.verticalPosition || 'auto');
 
     // Points settings
     safeSetChecked(elements.showPoints, config.points.show);
@@ -1483,6 +1487,8 @@
     // Legend
     safeSetChecked(elements.showLegend, config.legend.show);
     safeSetValue(elements.legendPosition, config.legend.position);
+    safeSetValue(elements.legendPadding, config.legend.padding || 14);
+    safeSetValue(elements.legendGap, config.legend.gap || 24);
     safeSetValue(elements.legendBar1Label, config.legend.bar1Label || '');
     safeSetValue(elements.legendBar2Label, config.legend.bar2Label || '');
     safeSetValue(elements.legendLineLabel, config.legend.lineLabel || '');
@@ -1687,6 +1693,7 @@
     // Select inputs
     safeAddListener(elements.lineStyle, 'change', (e) => config.line.style = e.target.value);
     safeAddListener(elements.lineCurve, 'change', (e) => config.line.curve = e.target.value);
+    safeAddListener(elements.lineVerticalPosition, 'change', (e) => config.line.verticalPosition = e.target.value);
     safeAddListener(elements.pointShape, 'change', (e) => config.points.shape = e.target.value);
     safeAddListener(elements.xAxisRotation, 'change', (e) => config.xAxis.rotation = parseInt(e.target.value));
     safeAddListener(elements.yAxisLeftFormat, 'change', (e) => {
@@ -1708,6 +1715,8 @@
       updateFormatOptionsVisibility('line-label', e.target.value);
     });
     safeAddListener(elements.legendPosition, 'change', (e) => config.legend.position = e.target.value);
+    safeAddListener(elements.legendPadding, 'input', (e) => config.legend.padding = parseInt(e.target.value) || 14);
+    safeAddListener(elements.legendGap, 'input', (e) => config.legend.gap = parseInt(e.target.value) || 24);
     safeAddListener(elements.legendBar1Label, 'change', (e) => config.legend.bar1Label = e.target.value);
     safeAddListener(elements.legendBar2Label, 'change', (e) => config.legend.bar2Label = e.target.value);
     safeAddListener(elements.legendLineLabel, 'change', (e) => config.legend.lineLabel = e.target.value);

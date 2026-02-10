@@ -97,12 +97,12 @@ const ComboChart = {
 
     // Bottom margin - accommodate x-axis labels based on rotation
     const xRotation = Math.abs(this.config.xAxis?.rotation || 0);
-    const bottomBase = xRotation === 0 ? 70 : xRotation <= 45 ? 85 : 105;
+    const bottomBase = xRotation === 0 ? 45 : xRotation <= 45 ? 60 : 80;
     // Add extra space if x-axis title is shown
     const hasXTitle = this.config.xAxis?.showTitle !== false &&
       (this.config.xAxis?.title || this.fieldNames?.dimension);
-    const bottomExtra = hasXTitle ? 25 : 0;
-    this.margin.bottom = Math.max(50, Math.min(120, bottomBase + bottomExtra));
+    const bottomExtra = hasXTitle ? 20 : 0;
+    this.margin.bottom = Math.max(40, Math.min(110, bottomBase + bottomExtra));
 
     // Left margin - accommodate y-axis labels and title (increased for better readability)
     const leftBase = Math.max(70, Math.min(110, baseMargin * 1.4));
@@ -323,6 +323,17 @@ const ComboChart = {
           .domain([yRightMin, yRightMax])
           .range([this.height, 0])
           .nice();
+      }
+      // Apply line vertical position (compress the line's Y range)
+      const vertPos = this.config.line?.verticalPosition || 'auto';
+      if (vertPos !== 'auto' && vertPos !== 'top') {
+        const rangeTopFraction = {
+          'upper': 0.15,
+          'middle': 0.35,
+          'lower': 0.55,
+          'bottom': 0.75
+        }[vertPos] || 0;
+        this.yScaleRight = this.yScaleRight.range([this.height, this.height * rangeTopFraction]);
       }
     } else {
       // Shared axis - use left scale for everything
@@ -562,8 +573,13 @@ const ComboChart = {
         .style('font-weight', yAxisFont.weight || 400)
         .style('fill', yAxisFont.color || '#666666')
         .style('font-style', this.getFontStyle(yAxisFont))
-        .attr('dx', yLeftOffsetX || null)
-        .attr('dy', yLeftOffsetY ? `${yLeftOffsetY}px` : null);
+        .each(function() {
+          if (yLeftOffsetX || yLeftOffsetY) {
+            const el = d3.select(this);
+            const existingTransform = el.attr('transform') || '';
+            el.attr('transform', `${existingTransform} translate(${yLeftOffsetX}, ${yLeftOffsetY})`);
+          }
+        });
 
       // Y Axis Left title - position based on left margin to avoid overlap
       yAxisLeftGroup.selectAll('.axis-title').remove();
@@ -626,8 +642,13 @@ const ComboChart = {
         .style('font-weight', yAxisFont.weight || 400)
         .style('fill', yAxisFont.color || '#666666')
         .style('font-style', this.getFontStyle(yAxisFont))
-        .attr('dx', yRightOffsetX || null)
-        .attr('dy', yRightOffsetY ? `${yRightOffsetY}px` : null);
+        .each(function() {
+          if (yRightOffsetX || yRightOffsetY) {
+            const el = d3.select(this);
+            const existingTransform = el.attr('transform') || '';
+            el.attr('transform', `${existingTransform} translate(${yRightOffsetX}, ${yRightOffsetY})`);
+          }
+        });
 
       // Y Axis Right title - position based on right margin to avoid overlap
       yAxisRightGroup.selectAll('.axis-title').remove();
@@ -1140,12 +1161,15 @@ const ComboChart = {
 
     legendContainer.style('display', 'flex');
 
-    // Apply legend background color
+    // Apply legend styling
     const legendConfig = this.config.legend || {};
     const bgColor = legendConfig.bgColor || 'transparent';
+    const legendPadding = legendConfig.padding !== undefined ? legendConfig.padding : 14;
+    const legendGap = legendConfig.gap !== undefined ? legendConfig.gap : 24;
     legendContainer
       .style('background-color', bgColor)
-      .style('padding', bgColor !== 'transparent' ? `${legendConfig.padding || 14}px` : null)
+      .style('padding', `${legendPadding}px`)
+      .style('gap', `${legendGap}px`)
       .style('border-radius', bgColor !== 'transparent' ? '4px' : null);
 
     // Apply legend position styling

@@ -355,6 +355,17 @@
               <option value="step">Step</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="line-vertical-position">Vertical Position</label>
+            <select id="line-vertical-position" class="form-control">
+              <option value="auto">Auto (Full Range)</option>
+              <option value="top">Top</option>
+              <option value="upper">Upper</option>
+              <option value="middle">Middle</option>
+              <option value="lower">Lower</option>
+              <option value="bottom">Bottom (near X-axis)</option>
+            </select>
+          </div>
         </section>
 
         <section class="config-section">
@@ -1082,6 +1093,16 @@
               <option value="right">Right</option>
               <option value="left">Left</option>
             </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="legend-padding">Padding (px)</label>
+              <input type="number" id="legend-padding" min="0" max="50" value="14" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="legend-gap">Item Gap (px)</label>
+              <input type="number" id="legend-gap" min="4" max="60" value="24" class="form-control small">
+            </div>
           </div>
           <div class="form-group">
             <label for="legend-font-family">Font</label>

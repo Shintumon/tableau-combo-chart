@@ -106,7 +106,8 @@ const Config = {
       opacity: 1,
       width: 2,
       style: 'solid', // 'solid', 'dashed', 'dotted'
-      curve: 'linear' // 'linear', 'monotone', 'cardinal', 'step'
+      curve: 'linear', // 'linear', 'monotone', 'cardinal', 'step'
+      verticalPosition: 'auto' // 'auto', 'top', 'middle', 'bottom'
     },
 
     points: {
@@ -242,7 +243,8 @@ const Config = {
       bar2Label: '',  // Custom label for bar 2
       lineLabel: '',  // Custom label for line
       bgColor: 'transparent',
-      padding: 14
+      padding: 14,
+      gap: 24
     },
 
     // Tooltip
