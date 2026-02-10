@@ -643,32 +643,34 @@
     try {
       if (window.queryLocalFonts) {
         const fonts = await window.queryLocalFonts();
-        const familySet = new Set();
-        const systemFonts = [];
+        if (fonts && fonts.length > 0) {
+          const familySet = new Set();
+          const systemFonts = [];
 
-        fonts.forEach(font => {
-          const family = font.family;
-          if (!familySet.has(family)) {
-            familySet.add(family);
-            systemFonts.push({
-              value: buildFontStack(family),
-              label: family,
-              primary: family
-            });
-          }
-        });
+          fonts.forEach(font => {
+            const family = font.family;
+            if (!familySet.has(family)) {
+              familySet.add(family);
+              systemFonts.push({
+                value: buildFontStack(family),
+                label: family,
+                primary: family
+              });
+            }
+          });
 
-        // Sort alphabetically
-        systemFonts.sort((a, b) => a.label.localeCompare(b.label));
-        systemFontsCache = systemFonts;
-        console.log(`Local Font Access API: found ${systemFonts.length} font families`);
-        return systemFonts;
+          systemFonts.sort((a, b) => a.label.localeCompare(b.label));
+          systemFontsCache = systemFonts;
+          console.log(`Local Font Access API: found ${systemFonts.length} font families`);
+          return systemFonts;
+        }
+        console.log('Local Font Access API returned empty result, using fallback');
       }
     } catch (e) {
       console.log('Local Font Access API not available:', e.message);
     }
 
-    // Fallback: show all common fonts (document.fonts.check() is unreliable for system fonts)
+    // Fallback: show all common fonts
     systemFontsCache = fallbackFontFamilies;
     console.log(`Font fallback list: ${fallbackFontFamilies.length} fonts`);
     return fallbackFontFamilies;
