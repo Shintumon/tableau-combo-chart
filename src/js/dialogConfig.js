@@ -269,9 +269,12 @@
 
   /**
    * Get default configuration
+   * Uses workbook font if available, otherwise falls back to system default
    */
   function getDefaultConfig() {
-    const defaultFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    // Get the default font from workbook or system
+    const detectedFont = getDetectedFontFamily();
+
     return {
       dimension: '',
       bar1Measure: '',
@@ -285,7 +288,7 @@
       line: { color: '#e15759', opacity: 1, width: 2, style: 'solid', curve: 'linear' },
       points: { show: true, size: 5, shape: 'circle', fill: '#e15759', stroke: '#ffffff' },
       animation: { enabled: true, duration: 500, easing: 'easeCubicOut' },
-      font: { family: defaultFont, titleWeight: 600, labelWeight: 400 },
+      font: { family: detectedFont, titleWeight: 600, labelWeight: 400 },
       axisMode: 'dual',
       xAxis: { show: true, title: '', fontSize: 12, rotation: 0, sort: 'default', showTitle: true, showLabels: true, showTickMarks: true, showAxisLine: true, align: 'center', maxWidth: 'none', lineColor: '#999999', tickColor: '#999999' },
       yAxisLeft: { show: true, title: '', min: null, max: null, format: 'auto' },
@@ -297,14 +300,35 @@
       legend: { show: true, position: 'bottom', bar1Label: '', bar2Label: '', lineLabel: '' },
       tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, bgColor: '#333333', textColor: '#ffffff', fontSize: 12 },
       headerControls: { showLegendToggle: true, showSettingsCog: true },
-      titleFont: { family: defaultFont, size: 18, weight: 600, color: '#333333', italic: false },
-      xAxisFont: { family: defaultFont, size: 12, weight: 400, color: '#666666', italic: false },
-      yAxisFont: { family: defaultFont, size: 12, weight: 400, color: '#666666', italic: false },
-      legendFont: { family: defaultFont, size: 12, weight: 400, color: '#333333', italic: false },
-      barLabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
-      lineLabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
-      tooltipFont: { family: defaultFont, size: 12, weight: 400, color: '#ffffff', italic: false }
+      titleFont: { family: detectedFont, size: 18, weight: 600, color: '#333333', italic: false },
+      xAxisFont: { family: detectedFont, size: 12, weight: 400, color: '#666666', italic: false },
+      yAxisFont: { family: detectedFont, size: 12, weight: 400, color: '#666666', italic: false },
+      legendFont: { family: detectedFont, size: 12, weight: 400, color: '#333333', italic: false },
+      barLabelFont: { family: detectedFont, size: 10, weight: 400, color: '#333333', italic: false },
+      lineLabelFont: { family: detectedFont, size: 10, weight: 400, color: '#333333', italic: false },
+      tooltipFont: { family: detectedFont, size: 12, weight: 400, color: '#ffffff', italic: false }
     };
+  }
+
+  /**
+   * Get the detected font family (workbook or system)
+   * This is a helper function that can be called before detectSystemFont is fully initialized
+   */
+  function getDetectedFontFamily() {
+    // Try to get workbook font first
+    try {
+      if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.environment) {
+        const workbookFont = getWorkbookFont();
+        if (workbookFont) {
+          return workbookFont.family;
+        }
+      }
+    } catch (e) {
+      // Tableau API might not be ready yet
+    }
+
+    // Fall back to system default
+    return "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   }
 
   /**
@@ -603,29 +627,160 @@
   }
 
   /**
+   * Workbook formatting cache
+   */
+  let workbookFormattingCache = null;
+
+  /**
+   * Get workbook formatting from Tableau API
+   * Returns font and color information from the workbook settings
+   */
+  function getWorkbookFormatting() {
+    if (workbookFormattingCache) {
+      return workbookFormattingCache;
+    }
+
+    try {
+      const env = tableau.extensions.environment;
+      if (env && env.workbookFormatting && env.workbookFormatting.formattingSheets) {
+        const sheets = env.workbookFormatting.formattingSheets;
+        const formatting = {
+          worksheet: null,
+          worksheetTitle: null,
+          tooltip: null,
+          dashboardTitle: null
+        };
+
+        sheets.forEach(sheet => {
+          const key = sheet.classNameKey;
+          const css = sheet.cssProperties || {};
+
+          // Extract font info from CSS properties
+          const fontInfo = {
+            fontName: css.fontName || css['font-family'] || null,
+            fontSize: css.fontSize || css['font-size'] || null,
+            fontWeight: css.isFontBold ? 'bold' : (css['font-weight'] || 'normal'),
+            fontStyle: css.isFontItalic ? 'italic' : 'normal',
+            color: css.color || null
+          };
+
+          // Map class name key to our formatting object
+          if (key === 'tableau-worksheet' || key === 'Worksheet') {
+            formatting.worksheet = fontInfo;
+          } else if (key === 'tableau-worksheet-title' || key === 'WorksheetTitle') {
+            formatting.worksheetTitle = fontInfo;
+          } else if (key === 'tableau-tooltip' || key === 'Tooltip') {
+            formatting.tooltip = fontInfo;
+          } else if (key === 'tableau-dashboard-title' || key === 'DashboardTitle') {
+            formatting.dashboardTitle = fontInfo;
+          }
+        });
+
+        workbookFormattingCache = formatting;
+        console.log('Workbook formatting detected:', formatting);
+        return formatting;
+      }
+    } catch (e) {
+      console.log('Could not get workbook formatting:', e.message);
+    }
+
+    return null;
+  }
+
+  /**
+   * Get the primary workbook font (from worksheet body text)
+   */
+  function getWorkbookFont() {
+    const formatting = getWorkbookFormatting();
+
+    // Try worksheet body font first, then worksheet title, then dashboard title
+    const sources = [
+      formatting?.worksheet,
+      formatting?.worksheetTitle,
+      formatting?.dashboardTitle
+    ];
+
+    for (const source of sources) {
+      if (source && source.fontName) {
+        let fontName = source.fontName;
+        // Clean up the font name (remove quotes if present)
+        fontName = fontName.replace(/['"]/g, '').trim();
+
+        // Build a proper font-family stack
+        const fontStack = buildFontStack(fontName);
+
+        return {
+          family: fontStack,
+          label: fontName,
+          primary: fontName,
+          isWorkbookFont: true
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Build a font-family stack with fallbacks
+   */
+  function buildFontStack(primaryFont) {
+    const lowerFont = primaryFont.toLowerCase();
+
+    // Tableau-specific fonts
+    if (lowerFont.includes('tableau')) {
+      return `'${primaryFont}', 'Tableau Regular', Arial, sans-serif`;
+    }
+
+    // Serif fonts
+    if (['georgia', 'times new roman', 'times', 'palatino', 'garamond'].some(f => lowerFont.includes(f))) {
+      return `'${primaryFont}', Georgia, 'Times New Roman', serif`;
+    }
+
+    // Monospace fonts
+    if (['courier', 'consolas', 'monaco', 'menlo', 'monospace'].some(f => lowerFont.includes(f))) {
+      return `'${primaryFont}', Consolas, Monaco, monospace`;
+    }
+
+    // Default to sans-serif stack
+    return `'${primaryFont}', 'Segoe UI', Arial, sans-serif`;
+  }
+
+  /**
    * Detect system font preferences
-   * Note: Tableau Extensions API doesn't expose workbook font settings directly,
-   * so we use common defaults based on the platform
+   * First tries to get the workbook font from Tableau, then falls back to OS detection
    */
   function detectSystemFont() {
-    // Try to detect the platform
+    // First, try to get the font from the Tableau workbook
+    const workbookFont = getWorkbookFont();
+    if (workbookFont) {
+      return workbookFont;
+    }
+
+    // Fall back to platform-specific detection
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const isWindows = navigator.platform.toUpperCase().indexOf('WIN') >= 0;
 
     if (isMac) {
       return {
         family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif",
-        label: 'SF Pro (macOS)'
+        label: 'SF Pro',
+        primary: 'SF Pro',
+        isWorkbookFont: false
       };
     } else if (isWindows) {
       return {
         family: "'Segoe UI', Tahoma, Geneva, sans-serif",
-        label: 'Segoe UI (Windows)'
+        label: 'Segoe UI',
+        primary: 'Segoe UI',
+        isWorkbookFont: false
       };
     }
     return {
       family: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      label: 'System UI'
+      label: 'System Default',
+      primary: 'system-ui',
+      isWorkbookFont: false
     };
   }
 
@@ -634,17 +789,24 @@
    */
   function initFontSelects() {
     const fontSelects = document.querySelectorAll('.font-select');
-    const systemFont = detectSystemFont();
+    const detectedFont = detectSystemFont();
 
     fontSelects.forEach(select => {
       select.innerHTML = '';
 
-      // Add detected system font as first option
-      const systemOption = document.createElement('option');
-      systemOption.value = systemFont.family;
-      systemOption.textContent = systemFont.label + ' (Recommended)';
-      systemOption.style.fontFamily = systemFont.family;
-      select.appendChild(systemOption);
+      // Add detected font as first option with appropriate label
+      const detectedOption = document.createElement('option');
+      detectedOption.value = detectedFont.family;
+
+      // Show different label based on source
+      if (detectedFont.isWorkbookFont) {
+        detectedOption.textContent = `${detectedFont.label} (Workbook Default)`;
+      } else {
+        detectedOption.textContent = `${detectedFont.label} (System Default)`;
+      }
+      detectedOption.style.fontFamily = detectedFont.family;
+      detectedOption.dataset.isDefault = 'true';
+      select.appendChild(detectedOption);
 
       // Add separator
       const separator = document.createElement('option');
@@ -652,7 +814,50 @@
       separator.textContent = '─────────────';
       select.appendChild(separator);
 
+      // Add common Tableau fonts section if workbook font was detected
+      if (detectedFont.isWorkbookFont) {
+        const tableauLabel = document.createElement('option');
+        tableauLabel.disabled = true;
+        tableauLabel.textContent = 'Tableau Fonts';
+        tableauLabel.style.fontWeight = 'bold';
+        select.appendChild(tableauLabel);
+
+        const tableauFonts = [
+          { value: "'Tableau Book', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Book', primary: 'Tableau Book' },
+          { value: "'Tableau Light', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Light', primary: 'Tableau Light' },
+          { value: "'Tableau Medium', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Medium', primary: 'Tableau Medium' },
+          { value: "'Tableau Semibold', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Semibold', primary: 'Tableau Semibold' }
+        ];
+
+        tableauFonts.forEach(font => {
+          const option = document.createElement('option');
+          option.value = font.value;
+          option.style.fontFamily = font.value;
+          const isAvailable = isFontAvailable(font.primary);
+          option.textContent = font.label + (isAvailable ? '' : ' (fallback)');
+          select.appendChild(option);
+        });
+
+        // Add separator before other fonts
+        const separator2 = document.createElement('option');
+        separator2.disabled = true;
+        separator2.textContent = '─────────────';
+        select.appendChild(separator2);
+      }
+
+      // Add other fonts section header
+      const otherLabel = document.createElement('option');
+      otherLabel.disabled = true;
+      otherLabel.textContent = 'Other Fonts';
+      otherLabel.style.fontWeight = 'bold';
+      select.appendChild(otherLabel);
+
       fontFamilies.forEach(font => {
+        // Skip if this is the same as the detected font
+        if (font.primary === detectedFont.primary) {
+          return;
+        }
+
         const option = document.createElement('option');
         option.value = font.value;
         option.style.fontFamily = font.value;
@@ -664,6 +869,9 @@
         select.appendChild(option);
       });
     });
+
+    console.log('Font selects initialized. Detected font:', detectedFont.label,
+      detectedFont.isWorkbookFont ? '(from workbook)' : '(system default)');
   }
 
   /**

@@ -47,20 +47,24 @@ const Config = {
     }
   },
 
-  // Font families available
+  // Font families available (Tableau fonts listed first)
   fontFamilies: [
-    { value: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', label: 'System Default' },
-    { value: '"Tableau Book", "Tableau Regular", Arial, sans-serif', label: 'Tableau' },
-    { value: '"Segoe UI", Tahoma, Geneva, sans-serif', label: 'Segoe UI' },
-    { value: 'Arial, Helvetica, sans-serif', label: 'Arial' },
-    { value: '"Helvetica Neue", Helvetica, Arial, sans-serif', label: 'Helvetica' },
-    { value: 'Roboto, "Helvetica Neue", sans-serif', label: 'Roboto' },
-    { value: '"Open Sans", sans-serif', label: 'Open Sans' },
-    { value: '"Source Sans Pro", sans-serif', label: 'Source Sans Pro' },
-    { value: 'Lato, sans-serif', label: 'Lato' },
-    { value: '"Inter", sans-serif', label: 'Inter' },
-    { value: 'Georgia, "Times New Roman", serif', label: 'Georgia' },
-    { value: '"Courier New", Courier, monospace', label: 'Courier New' }
+    { value: '"Tableau Book", "Tableau Regular", Arial, sans-serif', label: 'Tableau Book', primary: 'Tableau Book' },
+    { value: '"Tableau Light", "Tableau Regular", Arial, sans-serif', label: 'Tableau Light', primary: 'Tableau Light' },
+    { value: '"Tableau Medium", "Tableau Regular", Arial, sans-serif', label: 'Tableau Medium', primary: 'Tableau Medium' },
+    { value: '"Tableau Semibold", "Tableau Regular", Arial, sans-serif', label: 'Tableau Semibold', primary: 'Tableau Semibold' },
+    { value: '"Segoe UI", Tahoma, Geneva, sans-serif', label: 'Segoe UI', primary: 'Segoe UI' },
+    { value: 'Arial, Helvetica, sans-serif', label: 'Arial', primary: 'Arial' },
+    { value: '"Helvetica Neue", Helvetica, Arial, sans-serif', label: 'Helvetica Neue', primary: 'Helvetica Neue' },
+    { value: 'Roboto, "Helvetica Neue", sans-serif', label: 'Roboto', primary: 'Roboto' },
+    { value: '"Open Sans", sans-serif', label: 'Open Sans', primary: 'Open Sans' },
+    { value: '"Source Sans Pro", sans-serif', label: 'Source Sans Pro', primary: 'Source Sans Pro' },
+    { value: 'Lato, sans-serif', label: 'Lato', primary: 'Lato' },
+    { value: '"Inter", sans-serif', label: 'Inter', primary: 'Inter' },
+    { value: 'Georgia, "Times New Roman", serif', label: 'Georgia', primary: 'Georgia' },
+    { value: '"Times New Roman", Times, serif', label: 'Times New Roman', primary: 'Times New Roman' },
+    { value: 'Verdana, Geneva, sans-serif', label: 'Verdana', primary: 'Verdana' },
+    { value: '"Courier New", Courier, monospace', label: 'Courier New', primary: 'Courier New' }
   ],
 
   // Default configuration
@@ -306,10 +310,105 @@ const Config = {
   // Current configuration
   current: null,
 
+  // Cached workbook formatting
+  workbookFormatting: null,
+
+  /**
+   * Get workbook formatting from Tableau API
+   * Returns font and color information from the workbook settings
+   */
+  getWorkbookFormatting() {
+    if (this.workbookFormatting) {
+      return this.workbookFormatting;
+    }
+
+    try {
+      if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.environment) {
+        const env = tableau.extensions.environment;
+        if (env.workbookFormatting && env.workbookFormatting.formattingSheets) {
+          const sheets = env.workbookFormatting.formattingSheets;
+          const formatting = {};
+
+          sheets.forEach(sheet => {
+            const key = sheet.classNameKey;
+            const css = sheet.cssProperties || {};
+
+            const fontInfo = {
+              fontName: css.fontName || css['font-family'] || null,
+              fontSize: css.fontSize || css['font-size'] || null,
+              fontWeight: css.isFontBold ? 'bold' : (css['font-weight'] || 'normal'),
+              fontStyle: css.isFontItalic ? 'italic' : 'normal',
+              color: css.color || null
+            };
+
+            // Map class name key
+            if (key === 'tableau-worksheet' || key === 'Worksheet') {
+              formatting.worksheet = fontInfo;
+            } else if (key === 'tableau-worksheet-title' || key === 'WorksheetTitle') {
+              formatting.worksheetTitle = fontInfo;
+            } else if (key === 'tableau-tooltip' || key === 'Tooltip') {
+              formatting.tooltip = fontInfo;
+            }
+          });
+
+          this.workbookFormatting = formatting;
+          console.log('Config: Workbook formatting detected:', formatting);
+          return formatting;
+        }
+      }
+    } catch (e) {
+      console.log('Config: Could not get workbook formatting:', e.message);
+    }
+
+    return null;
+  },
+
+  /**
+   * Get the primary workbook font
+   */
+  getWorkbookFont() {
+    const formatting = this.getWorkbookFormatting();
+
+    const sources = [
+      formatting?.worksheet,
+      formatting?.worksheetTitle
+    ];
+
+    for (const source of sources) {
+      if (source && source.fontName) {
+        let fontName = source.fontName.replace(/['"]/g, '').trim();
+        // Build font stack with fallbacks
+        if (fontName.toLowerCase().includes('tableau')) {
+          return `'${fontName}', 'Tableau Regular', Arial, sans-serif`;
+        }
+        return `'${fontName}', 'Segoe UI', Arial, sans-serif`;
+      }
+    }
+
+    return null;
+  },
+
   /**
    * Initialize configuration from settings or defaults
+   * Attempts to use workbook font if available
    */
   init() {
+    // Try to get workbook font for defaults
+    const workbookFont = this.getWorkbookFont();
+    if (workbookFont) {
+      console.log('Config: Using workbook font as default:', workbookFont);
+      // Update defaults with workbook font
+      this.defaults.font.family = workbookFont;
+      this.defaults.titleFont.family = workbookFont;
+      this.defaults.xAxisFont.family = workbookFont;
+      this.defaults.yAxisFont.family = workbookFont;
+      this.defaults.legendFont.family = workbookFont;
+      this.defaults.barLabelFont.family = workbookFont;
+      this.defaults.bar1LabelFont.family = workbookFont;
+      this.defaults.bar2LabelFont.family = workbookFont;
+      this.defaults.lineLabelFont.family = workbookFont;
+      this.defaults.tooltipFont.family = workbookFont;
+    }
     this.current = JSON.parse(JSON.stringify(this.defaults));
   },
 
@@ -338,7 +437,8 @@ const Config = {
    * Ensure all font configuration objects exist with proper defaults
    */
   ensureFontObjects() {
-    const defaultFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    // Try to get workbook font, fall back to system default
+    const defaultFont = this.getWorkbookFont() || "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     const fontDefaults = {
       titleFont: { family: defaultFont, size: 18, weight: 600, color: '#333333', italic: false },
       xAxisFont: { family: defaultFont, size: 12, weight: 400, color: '#666666', italic: false },
