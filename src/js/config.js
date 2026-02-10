@@ -312,14 +312,18 @@ const Config = {
       size: 12,
       weight: 400,
       color: '#333333',
-      italic: false
+      italic: false,
+      offsetX: 0,
+      offsetY: 0
     },
     bar2LabelFont: {
       family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       size: 12,
       weight: 400,
       color: '#333333',
-      italic: false
+      italic: false,
+      offsetX: 0,
+      offsetY: 0
     },
     lineLabelFont: {
       family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

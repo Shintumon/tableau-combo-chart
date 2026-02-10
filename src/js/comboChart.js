@@ -517,9 +517,10 @@ const ComboChart = {
         // Fall back to dimension field name if no custom title (matches Y-axis behavior)
         const xTitle = this.config.xAxis.title || this.fieldNames?.dimension || '';
         if (xTitle) {
-          // Calculate title Y offset based on rotation angle
+          // Calculate title Y offset based on rotation angle and label offset
           const rotation = Math.abs(this.config.xAxis.rotation || 0);
-          const titleYOffset = rotation === 0 ? 40 : rotation <= 45 ? 55 : 70;
+          const labelYOff = Math.abs(this.config.xAxis.labelOffsetY || 0);
+          const titleYOffset = (rotation === 0 ? 45 : rotation <= 45 ? 60 : 75) + labelYOff;
 
           xAxisGroup.append('text')
             .attr('class', 'axis-title')
@@ -998,24 +999,26 @@ const ComboChart = {
     if (this.config.barLabels.show) {
       const barWidth = this.config.barStyle === 'grouped' ? bandWidth / 2 - 2 : bandWidth - 4;
       const barLabelConfig = this.config.barLabels || {};
-      const barOffsetX = barLabelConfig.offsetX || 0;
-      const barOffsetY = barLabelConfig.offsetY || 0;
 
       // Bar 1 font settings with fallbacks
       const bar1LabelFont = this.config.bar1LabelFont || this.config.barLabelFont || {};
-      const bar1FontSize = bar1LabelFont.size || barLabelConfig.fontSize || 10;
+      const bar1FontSize = bar1LabelFont.size || barLabelConfig.fontSize || 12;
       const bar1FontFamily = bar1LabelFont.family || null;
       const bar1FontWeight = bar1LabelFont.weight || 400;
       const bar1FontColor = bar1LabelFont.color || barLabelConfig.color || '#333333';
       const bar1FontStyle = bar1LabelFont.italic ? 'italic' : 'normal';
+      const bar1OffsetX = bar1LabelFont.offsetX || barLabelConfig.offsetX || 0;
+      const bar1OffsetY = bar1LabelFont.offsetY || barLabelConfig.offsetY || 0;
 
       // Bar 2 font settings with fallbacks
       const bar2LabelFont = this.config.bar2LabelFont || this.config.barLabelFont || {};
-      const bar2FontSize = bar2LabelFont.size || barLabelConfig.fontSize || 10;
+      const bar2FontSize = bar2LabelFont.size || barLabelConfig.fontSize || 12;
       const bar2FontFamily = bar2LabelFont.family || null;
       const bar2FontWeight = bar2LabelFont.weight || 400;
       const bar2FontColor = bar2LabelFont.color || barLabelConfig.color || '#333333';
       const bar2FontStyle = bar2LabelFont.italic ? 'italic' : 'normal';
+      const bar2OffsetX = bar2LabelFont.offsetX || barLabelConfig.offsetX || 0;
+      const bar2OffsetY = bar2LabelFont.offsetY || barLabelConfig.offsetY || 0;
 
       // Bar label formatter
       const barFormat = barLabelConfig.format || 'auto';
@@ -1034,7 +1037,7 @@ const ComboChart = {
           } else {
             x = this.xScale(d.dimension) + bandWidth / 2;
           }
-          return x + barOffsetX;
+          return x + bar1OffsetX;
         })
         .attr('y', d => {
           const y = this.yScaleLeft(d.bar1Value);
@@ -1042,7 +1045,7 @@ const ComboChart = {
           if (barLabelConfig.position === 'top') baseY = y - 5;
           else if (barLabelConfig.position === 'inside') baseY = y + 15;
           else baseY = y + (this.height - y) / 2;
-          return baseY + barOffsetY;
+          return baseY + bar1OffsetY;
         })
         .attr('text-anchor', 'middle')
         .style('font-size', `${bar1FontSize}px`)
@@ -1065,7 +1068,7 @@ const ComboChart = {
           } else {
             x = this.xScale(d.dimension) + bandWidth / 2;
           }
-          return x + barOffsetX;
+          return x + bar2OffsetX;
         })
         .attr('y', d => {
           const y = this.config.barStyle === 'grouped'
@@ -1075,7 +1078,7 @@ const ComboChart = {
           if (barLabelConfig.position === 'top') baseY = y - 5;
           else if (barLabelConfig.position === 'inside') baseY = y + 15;
           else baseY = y + (this.height - y) / 2;
-          return baseY + barOffsetY;
+          return baseY + bar2OffsetY;
         })
         .attr('text-anchor', 'middle')
         .style('font-size', `${bar2FontSize}px`)

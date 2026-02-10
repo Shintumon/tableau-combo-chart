@@ -596,8 +596,10 @@
     elements.barLabelFontFamily = document.getElementById('bar-label-font-family');
     elements.barLabelFontWeight = document.getElementById('bar-label-font-weight');
     elements.barLabelItalic = document.getElementById('bar-label-italic');
-    elements.barLabelOffsetX = document.getElementById('bar-label-offset-x');
-    elements.barLabelOffsetY = document.getElementById('bar-label-offset-y');
+    elements.bar1LabelOffsetX = document.getElementById('bar1-label-offset-x');
+    elements.bar1LabelOffsetY = document.getElementById('bar1-label-offset-y');
+    elements.bar2LabelOffsetX = document.getElementById('bar2-label-offset-x');
+    elements.bar2LabelOffsetY = document.getElementById('bar2-label-offset-y');
     elements.lineLabelFontFamily = document.getElementById('line-label-font-family');
     elements.lineLabelFontWeight = document.getElementById('line-label-font-weight');
     elements.lineLabelItalic = document.getElementById('line-label-italic');
@@ -1459,8 +1461,10 @@
     safeSetValue(elements.barLabelFormat, config.barLabels.format || 'auto');
     safeSetValue(elements.barLabelFontSize, config.barLabels.fontSize);
     safeSetValue(elements.barLabelColor, config.barLabelFont?.color || config.barLabels.color);
-    safeSetValue(elements.barLabelOffsetX, config.barLabels.offsetX || 0);
-    safeSetValue(elements.barLabelOffsetY, config.barLabels.offsetY || 0);
+    safeSetValue(elements.bar1LabelOffsetX, config.bar1LabelFont?.offsetX || 0);
+    safeSetValue(elements.bar1LabelOffsetY, config.bar1LabelFont?.offsetY || 0);
+    safeSetValue(elements.bar2LabelOffsetX, config.bar2LabelFont?.offsetX || 0);
+    safeSetValue(elements.bar2LabelOffsetY, config.bar2LabelFont?.offsetY || 0);
 
     // Line labels
     safeSetChecked(elements.showLineLabels, config.lineLabels.show);
@@ -2156,15 +2160,30 @@
       if (!config.barLabelFont) config.barLabelFont = {};
       config.barLabelFont.color = e.target.value;
     });
-    // Bar label offset
-    if (elements.barLabelOffsetX) {
-      elements.barLabelOffsetX.addEventListener('change', (e) => {
-        config.barLabels.offsetX = parseInt(e.target.value) || 0;
+    // Bar 1 label offset
+    if (elements.bar1LabelOffsetX) {
+      elements.bar1LabelOffsetX.addEventListener('change', (e) => {
+        if (!config.bar1LabelFont) config.bar1LabelFont = {};
+        config.bar1LabelFont.offsetX = parseInt(e.target.value) || 0;
       });
     }
-    if (elements.barLabelOffsetY) {
-      elements.barLabelOffsetY.addEventListener('change', (e) => {
-        config.barLabels.offsetY = parseInt(e.target.value) || 0;
+    if (elements.bar1LabelOffsetY) {
+      elements.bar1LabelOffsetY.addEventListener('change', (e) => {
+        if (!config.bar1LabelFont) config.bar1LabelFont = {};
+        config.bar1LabelFont.offsetY = parseInt(e.target.value) || 0;
+      });
+    }
+    // Bar 2 label offset
+    if (elements.bar2LabelOffsetX) {
+      elements.bar2LabelOffsetX.addEventListener('change', (e) => {
+        if (!config.bar2LabelFont) config.bar2LabelFont = {};
+        config.bar2LabelFont.offsetX = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.bar2LabelOffsetY) {
+      elements.bar2LabelOffsetY.addEventListener('change', (e) => {
+        if (!config.bar2LabelFont) config.bar2LabelFont = {};
+        config.bar2LabelFont.offsetY = parseInt(e.target.value) || 0;
       });
     }
 
