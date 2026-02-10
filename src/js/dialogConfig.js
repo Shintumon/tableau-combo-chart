@@ -2518,7 +2518,7 @@
       optionsRow.style.display = showOptions ? 'flex' : 'none';
     }
     if (currencyGroup) {
-      const showCurrency = format === 'currency' || format === 'custom';
+      const showCurrency = format === 'currency' || format === 'custom' || format === 'compact';
       currencyGroup.style.display = showCurrency ? 'block' : 'none';
     }
   }

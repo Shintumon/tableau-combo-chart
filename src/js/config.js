@@ -648,8 +648,18 @@ const Config = {
         return (value) => symbol + d3.format(`,.${d}f`)(value);
       case 'percent':
         return d3.format(`.${d}%`);
-      case 'compact':
-        return d3.format(`.${Math.max(1, d)}s`);
+      case 'compact': {
+        const sym = (symbol && symbol.trim()) ? symbol : '';
+        return (value) => {
+          const abs = Math.abs(value);
+          let scaled, suffix;
+          if (abs >= 1e9) { scaled = value / 1e9; suffix = 'B'; }
+          else if (abs >= 1e6) { scaled = value / 1e6; suffix = 'M'; }
+          else if (abs >= 1e3) { scaled = value / 1e3; suffix = 'K'; }
+          else { scaled = value; suffix = ''; }
+          return sym + scaled.toFixed(d) + suffix;
+        };
+      }
       case 'scientific':
         return d3.format(`.${Math.max(1, d)}e`);
       case 'custom':
