@@ -1158,7 +1158,9 @@ const ComboChart = {
   updateTitle() {
     const titleElement = document.getElementById('chart-title');
     if (this.config.title.show && titleElement) {
-      titleElement.textContent = this.config.title.text || 'Combo Chart';
+      // DEBUG: Show sort value in title temporarily
+      const sortValue = this.config.xAxis?.sort || 'undefined';
+      titleElement.textContent = (this.config.title.text || 'Combo Chart') + ` [Sort: ${sortValue}]`;
       titleElement.style.display = 'block';
       titleElement.style.cursor = 'pointer';
 
