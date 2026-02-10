@@ -97,7 +97,9 @@ const ComboChart = {
     const xRotation = Math.abs(this.config.xAxis?.rotation || 0);
     const bottomBase = xRotation === 0 ? 60 : xRotation <= 45 ? 80 : 100;
     // Add extra space if x-axis title is shown
-    const bottomExtra = this.config.xAxis?.title && this.config.xAxis?.showTitle !== false ? 25 : 0;
+    const hasXTitle = this.config.xAxis?.showTitle !== false &&
+      (this.config.xAxis?.title || this.fieldNames?.dimension);
+    const bottomExtra = hasXTitle ? 25 : 0;
     this.margin.bottom = Math.max(50, Math.min(120, bottomBase + bottomExtra));
 
     // Left margin - accommodate y-axis labels and title (increased for better readability)
@@ -158,6 +160,22 @@ const ComboChart = {
    */
   getFontStyle(fontConfig) {
     return fontConfig && fontConfig.italic ? 'italic' : 'normal';
+  },
+
+  /**
+   * Get display name for a measure (custom legend label or cleaned field name)
+   */
+  getDisplayName(type) {
+    const legend = this.config.legend || {};
+    const fieldName = type === 'bar1' ? this.fieldNames?.bar1
+      : type === 'bar2' ? this.fieldNames?.bar2
+      : this.fieldNames?.line;
+    const customLabel = type === 'bar1' ? legend.bar1Label
+      : type === 'bar2' ? legend.bar2Label
+      : legend.lineLabel;
+    if (customLabel) return customLabel;
+    if (!fieldName) return 'Unknown';
+    return fieldName.replace(/^(SUM|AVG|MIN|MAX|COUNT|AGG|MEDIAN|STDEV|VAR)\((.+)\)$/i, '$2').trim();
   },
 
   /**
@@ -391,8 +409,8 @@ const ComboChart = {
       } else {
         // Apply alignment for horizontal labels
         switch (alignment) {
-          case 'start': textAnchor = 'start'; break;
-          case 'end': textAnchor = 'end'; break;
+          case 'start': textAnchor = 'end'; break;    // Left = text extends left from center
+          case 'end': textAnchor = 'start'; break;    // Right = text extends right from center
           default: textAnchor = 'middle';
         }
       }
@@ -437,21 +455,25 @@ const ComboChart = {
 
       // X Axis title - adjust position based on label rotation
       xAxisGroup.selectAll('.axis-title').remove();
-      if (this.config.xAxis.title && xAxisConfig.showTitle !== false) {
-        // Calculate title Y offset based on rotation angle
-        const rotation = Math.abs(this.config.xAxis.rotation || 0);
-        const titleYOffset = rotation === 0 ? 40 : rotation <= 45 ? 55 : 70;
+      if (xAxisConfig.showTitle !== false) {
+        // Fall back to dimension field name if no custom title (matches Y-axis behavior)
+        const xTitle = this.config.xAxis.title || this.fieldNames?.dimension || '';
+        if (xTitle) {
+          // Calculate title Y offset based on rotation angle
+          const rotation = Math.abs(this.config.xAxis.rotation || 0);
+          const titleYOffset = rotation === 0 ? 40 : rotation <= 45 ? 55 : 70;
 
-        xAxisGroup.append('text')
-          .attr('class', 'axis-title')
-          .attr('x', this.width / 2)
-          .attr('y', titleYOffset)
-          .attr('text-anchor', 'middle')
-          .attr('font-family', xAxisFont.family || null)
-          .attr('font-weight', xAxisFont.weight || 400)
-          .attr('fill', xAxisFont.color || '#666666')
-          .style('font-style', this.getFontStyle(xAxisFont))
-          .text(this.config.xAxis.title);
+          xAxisGroup.append('text')
+            .attr('class', 'axis-title')
+            .attr('x', this.width / 2)
+            .attr('y', titleYOffset)
+            .attr('text-anchor', 'middle')
+            .attr('font-family', xAxisFont.family || null)
+            .attr('font-weight', xAxisFont.weight || 400)
+            .attr('fill', xAxisFont.color || '#666666')
+            .style('font-style', this.getFontStyle(xAxisFont))
+            .text(xTitle);
+        }
       }
     } else {
       xAxisGroup.selectAll('*').remove();
@@ -496,7 +518,7 @@ const ComboChart = {
       yAxisLeftGroup.selectAll('.axis-title').remove();
       if (yAxisLeftConfig.showTitle !== false) {
         const leftTitle = this.config.yAxisLeft.title ||
-          `${this.fieldNames.bar1} / ${this.fieldNames.bar2}`;
+          `${this.getDisplayName('bar1')} / ${this.getDisplayName('bar2')}`;
         // Position title at a safe distance from tick labels (increased offset)
         const titleXOffset = -Math.max(this.margin.left - 10, 60);
 
@@ -555,7 +577,7 @@ const ComboChart = {
       // Y Axis Right title - position based on right margin to avoid overlap
       yAxisRightGroup.selectAll('.axis-title').remove();
       if (yAxisRightConfig.showTitle !== false) {
-        const rightTitle = this.config.yAxisRight.title || this.fieldNames.line;
+        const rightTitle = this.config.yAxisRight.title || this.getDisplayName('line');
         // Position title at a safe distance from tick labels
         const titleXOffset = -Math.max(this.margin.right - 15, 45);
 
@@ -919,6 +941,10 @@ const ComboChart = {
       const bar2FontColor = bar2LabelFont.color || barLabelConfig.color || '#333333';
       const bar2FontStyle = bar2LabelFont.italic ? 'italic' : 'normal';
 
+      // Bar label formatter
+      const barFormat = barLabelConfig.format || 'auto';
+      const barFormatter = barFormat !== 'auto' ? Config.getFormatter(barFormat) : null;
+
       // Bar 1 labels
       labelsGroup.selectAll('.bar-label-1')
         .data(this.data)
@@ -948,7 +974,7 @@ const ComboChart = {
         .attr('font-weight', bar1FontWeight)
         .attr('fill', bar1FontColor)
         .style('font-style', bar1FontStyle)
-        .text(d => d.bar1Formatted);
+        .text(d => barFormatter ? barFormatter(d.bar1Value) : d.bar1Formatted);
 
       // Bar 2 labels
       labelsGroup.selectAll('.bar-label-2')
@@ -981,7 +1007,7 @@ const ComboChart = {
         .attr('font-weight', bar2FontWeight)
         .attr('fill', bar2FontColor)
         .style('font-style', bar2FontStyle)
-        .text(d => d.bar2Formatted);
+        .text(d => barFormatter ? barFormatter(d.bar2Value) : d.bar2Formatted);
     }
 
     // Line labels
@@ -998,6 +1024,10 @@ const ComboChart = {
       const lineFontWeight = lineLabelFont.weight || 400;
       const lineFontColor = lineLabelFont.color || lineLabelConfig.color || '#333333';
       const lineFontStyle = lineLabelFont.italic ? 'italic' : 'normal';
+
+      // Line label formatter
+      const lineFormat = lineLabelConfig.format || 'auto';
+      const lineFormatter = lineFormat !== 'auto' ? Config.getFormatter(lineFormat) : null;
 
       labelsGroup.selectAll('.line-label')
         .data(this.data)
@@ -1037,7 +1067,7 @@ const ComboChart = {
         .attr('font-weight', lineFontWeight)
         .attr('fill', lineFontColor)
         .style('font-style', lineFontStyle)
-        .text(d => d.lineFormatted);
+        .text(d => lineFormatter ? lineFormatter(d.lineValue) : d.lineFormatted);
     }
   },
 
@@ -1067,40 +1097,44 @@ const ComboChart = {
     const position = this.config.legend.position || 'bottom';
     const chartContainer = document.querySelector('.chart-container');
 
-    // Reset layout
-    legendContainer.classed('legend-right', false).classed('legend-left', false).classed('legend-top', false);
+    // Reset legend position classes
+    legendContainer.classed('legend-right', false).classed('legend-left', false)
+      .classed('legend-top', false).classed('legend-bottom', false);
 
-    // Reset container to default column layout first
+    // Reset container layout classes
     if (chartContainer) {
       chartContainer.style.flexDirection = '';
+      chartContainer.classList.remove('legend-layout-row');
     }
 
     if (position === 'right') {
       legendContainer.classed('legend-right', true);
-      if (chartContainer) chartContainer.style.flexDirection = 'row';
+      if (chartContainer) chartContainer.classList.add('legend-layout-row');
     } else if (position === 'left') {
       legendContainer.classed('legend-left', true);
-      if (chartContainer) chartContainer.style.flexDirection = 'row';
+      if (chartContainer) chartContainer.classList.add('legend-layout-row');
     } else if (position === 'top') {
       legendContainer.classed('legend-top', true);
-      if (chartContainer) chartContainer.style.flexDirection = 'column';
     } else {
       // Bottom (default)
-      if (chartContainer) chartContainer.style.flexDirection = 'column';
+      legendContainer.classed('legend-bottom', true);
     }
 
-    // Get clean measure names (remove aggregation prefixes if present)
-    const cleanName = (name) => {
-      if (!name) return 'Unknown';
-      // Remove common aggregation prefixes like "SUM()", "AVG()", "AGG()", etc.
-      return name.replace(/^(SUM|AVG|MIN|MAX|COUNT|AGG|MEDIAN|STDEV|VAR)\((.+)\)$/i, '$2').trim();
-    };
+    // Trigger re-render if legend position changed (to recalculate SVG dimensions)
+    const prevPosition = this._lastLegendPosition;
+    this._lastLegendPosition = position;
+    if (prevPosition && prevPosition !== position) {
+      setTimeout(() => {
+        if (this._lastLegendPosition === position) {
+          this.render();
+        }
+      }, 50);
+    }
 
-    // Get display labels (custom or auto)
-    const legend = this.config.legend || {};
-    const bar1Label = legend.bar1Label || cleanName(this.fieldNames.bar1);
-    const bar2Label = legend.bar2Label || cleanName(this.fieldNames.bar2);
-    const lineLabel = legend.lineLabel || cleanName(this.fieldNames.line);
+    // Get display labels (custom legend labels or cleaned field names)
+    const bar1Label = this.getDisplayName('bar1');
+    const bar2Label = this.getDisplayName('bar2');
+    const lineLabel = this.getDisplayName('line');
 
     // Apply legend font settings
     const legendFont = this.config.legendFont || {};
@@ -1214,9 +1248,7 @@ const ComboChart = {
       html += `<div class="tooltip-title">${d.dimension}</div>`;
     }
 
-    const measureName = type === 'bar1' ? this.fieldNames.bar1
-      : type === 'bar2' ? this.fieldNames.bar2
-      : this.fieldNames.line;
+    const measureName = this.getDisplayName(type);
 
     const value = type === 'bar1' ? d.bar1Formatted
       : type === 'bar2' ? d.bar2Formatted

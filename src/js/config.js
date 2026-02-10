@@ -201,6 +201,7 @@ const Config = {
       position: 'top', // 'top', 'inside', 'center'
       fontSize: 10,
       color: '#333333',
+      format: 'auto',
       offsetX: 0,
       offsetY: 0
     },
@@ -210,6 +211,7 @@ const Config = {
       position: 'top', // 'top', 'bottom', 'left', 'right', 'center'
       fontSize: 10,
       color: '#333333',
+      format: 'auto',
       offsetX: 0,
       offsetY: 0
     },
@@ -364,28 +366,60 @@ const Config = {
   },
 
   /**
-   * Get the primary workbook font
+   * Parse a font size string (e.g., "9pt", "15pt", "12px") to a numeric pixel value
+   */
+  parseFontSize(sizeStr) {
+    if (!sizeStr) return null;
+    const str = String(sizeStr).trim().toLowerCase();
+    const match = str.match(/^([\d.]+)\s*(pt|px|em|rem)?$/);
+    if (!match) return null;
+    const value = parseFloat(match[1]);
+    if (isNaN(value)) return null;
+    const unit = match[2] || 'pt';
+    if (unit === 'pt') return Math.round(value * 1.333);
+    if (unit === 'px') return Math.round(value);
+    if (unit === 'em' || unit === 'rem') return Math.round(value * 16);
+    return Math.round(value);
+  },
+
+  /**
+   * Get the primary workbook font and sizes
    */
   getWorkbookFont() {
     const formatting = this.getWorkbookFormatting();
 
+    let fontFamily = null;
     const sources = [
       formatting?.worksheet,
       formatting?.worksheetTitle
     ];
 
     for (const source of sources) {
-      if (source && source.fontName) {
+      if (source && source.fontName && !fontFamily) {
         let fontName = source.fontName.replace(/['"]/g, '').trim();
-        // Build font stack with fallbacks
         if (fontName.toLowerCase().includes('tableau')) {
-          return `'${fontName}', 'Tableau Regular', Arial, sans-serif`;
+          fontFamily = `'${fontName}', 'Tableau Regular', Arial, sans-serif`;
+        } else {
+          fontFamily = `'${fontName}', 'Segoe UI', Arial, sans-serif`;
         }
-        return `'${fontName}', 'Segoe UI', Arial, sans-serif`;
       }
     }
 
-    return null;
+    // Extract font sizes from workbook formatting
+    const worksheetFontSize = formatting?.worksheet?.fontSize
+      ? this.parseFontSize(formatting.worksheet.fontSize) : null;
+    const worksheetTitleFontSize = formatting?.worksheetTitle?.fontSize
+      ? this.parseFontSize(formatting.worksheetTitle.fontSize) : null;
+
+    if (!fontFamily && !worksheetFontSize && !worksheetTitleFontSize) {
+      return null;
+    }
+
+    return {
+      family: fontFamily,
+      worksheetFontSize,
+      worksheetTitleFontSize
+    };
   },
 
   /**
@@ -396,18 +430,36 @@ const Config = {
     // Try to get workbook font for defaults
     const workbookFont = this.getWorkbookFont();
     if (workbookFont) {
-      console.log('Config: Using workbook font as default:', workbookFont);
-      // Update defaults with workbook font
-      this.defaults.font.family = workbookFont;
-      this.defaults.titleFont.family = workbookFont;
-      this.defaults.xAxisFont.family = workbookFont;
-      this.defaults.yAxisFont.family = workbookFont;
-      this.defaults.legendFont.family = workbookFont;
-      this.defaults.barLabelFont.family = workbookFont;
-      this.defaults.bar1LabelFont.family = workbookFont;
-      this.defaults.bar2LabelFont.family = workbookFont;
-      this.defaults.lineLabelFont.family = workbookFont;
-      this.defaults.tooltipFont.family = workbookFont;
+      console.log('Config: Using workbook formatting as defaults:', workbookFont);
+      // Update defaults with workbook font family
+      if (workbookFont.family) {
+        const fontFamilyKeys = ['font', 'titleFont', 'xAxisFont', 'yAxisFont', 'legendFont',
+          'barLabelFont', 'bar1LabelFont', 'bar2LabelFont', 'lineLabelFont', 'tooltipFont'];
+        fontFamilyKeys.forEach(key => {
+          if (this.defaults[key]) this.defaults[key].family = workbookFont.family;
+        });
+      }
+      // Update defaults with workbook font sizes
+      if (workbookFont.worksheetTitleFontSize) {
+        this.defaults.titleFont.size = workbookFont.worksheetTitleFontSize;
+        this.defaults.title.fontSize = workbookFont.worksheetTitleFontSize;
+      }
+      if (workbookFont.worksheetFontSize) {
+        const bodySize = workbookFont.worksheetFontSize;
+        const labelSize = Math.max(8, bodySize - 2);
+        this.defaults.xAxisFont.size = bodySize;
+        this.defaults.yAxisFont.size = bodySize;
+        this.defaults.legendFont.size = bodySize;
+        this.defaults.tooltipFont.size = bodySize;
+        this.defaults.xAxis.fontSize = bodySize;
+        this.defaults.tooltip.fontSize = bodySize;
+        this.defaults.barLabelFont.size = labelSize;
+        this.defaults.bar1LabelFont.size = labelSize;
+        this.defaults.bar2LabelFont.size = labelSize;
+        this.defaults.lineLabelFont.size = labelSize;
+        this.defaults.barLabels.fontSize = labelSize;
+        this.defaults.lineLabels.fontSize = labelSize;
+      }
     }
     this.current = JSON.parse(JSON.stringify(this.defaults));
   },
@@ -437,18 +489,22 @@ const Config = {
    * Ensure all font configuration objects exist with proper defaults
    */
   ensureFontObjects() {
-    // Try to get workbook font, fall back to system default
-    const defaultFont = this.getWorkbookFont() || "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    // Try to get workbook font info (family + sizes)
+    const workbookFont = this.getWorkbookFont();
+    const defaultFont = (workbookFont && workbookFont.family) || "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    const titleSize = (workbookFont && workbookFont.worksheetTitleFontSize) || 18;
+    const bodySize = (workbookFont && workbookFont.worksheetFontSize) || 12;
+    const labelSize = Math.max(8, bodySize - 2);
     const fontDefaults = {
-      titleFont: { family: defaultFont, size: 18, weight: 600, color: '#333333', italic: false },
-      xAxisFont: { family: defaultFont, size: 12, weight: 400, color: '#666666', italic: false },
-      yAxisFont: { family: defaultFont, size: 12, weight: 400, color: '#666666', italic: false },
-      legendFont: { family: defaultFont, size: 12, weight: 400, color: '#333333', italic: false },
-      barLabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
-      bar1LabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
-      bar2LabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
-      lineLabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
-      tooltipFont: { family: defaultFont, size: 12, weight: 400, color: '#ffffff', italic: false }
+      titleFont: { family: defaultFont, size: titleSize, weight: 600, color: '#333333', italic: false },
+      xAxisFont: { family: defaultFont, size: bodySize, weight: 400, color: '#666666', italic: false },
+      yAxisFont: { family: defaultFont, size: bodySize, weight: 400, color: '#666666', italic: false },
+      legendFont: { family: defaultFont, size: bodySize, weight: 400, color: '#333333', italic: false },
+      barLabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      bar1LabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      bar2LabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      lineLabelFont: { family: defaultFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      tooltipFont: { family: defaultFont, size: bodySize, weight: 400, color: '#ffffff', italic: false }
     };
 
     for (const [key, defaults] of Object.entries(fontDefaults)) {

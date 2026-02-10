@@ -365,6 +365,17 @@ html, body {
   order: 0;
 }
 
+.legend.legend-bottom {
+  border-top: 1px solid var(--gray-200);
+  border-left: none;
+  border-right: none;
+  flex-direction: row;
+  max-width: none;
+  min-width: unset;
+  width: auto;
+  order: 2;
+}
+
 /* Chart container layout adjustments for legend positions */
 .chart-container {
   display: flex;
@@ -374,6 +385,27 @@ html, body {
 .chart-container .chart-area {
   flex: 1 1 auto;
   order: 1;
+}
+
+/* Row layout for left/right legend */
+.chart-container.legend-layout-row {
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.chart-container.legend-layout-row .chart-header {
+  flex: 0 0 100%;
+  order: -1;
+}
+
+.chart-container.legend-layout-row .chart-area {
+  flex: 1 1 0%;
+  min-width: 0;
+  order: 1;
+}
+
+.chart-container.legend-layout-row .legend {
+  flex: 0 0 auto;
 }
 
 /* Error State */

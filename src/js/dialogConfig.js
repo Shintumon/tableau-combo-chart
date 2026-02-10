@@ -275,6 +275,12 @@
     // Get the default font from workbook or system
     const detectedFont = getDetectedFontFamily();
 
+    // Get workbook font sizes
+    const workbookFont = getWorkbookFont();
+    const titleSize = (workbookFont && workbookFont.worksheetTitleFontSize) || 18;
+    const bodySize = (workbookFont && workbookFont.worksheetFontSize) || 12;
+    const labelSize = Math.max(8, bodySize - 2);
+
     return {
       dimension: '',
       bar1Measure: '',
@@ -290,23 +296,23 @@
       animation: { enabled: true, duration: 500, easing: 'easeCubicOut' },
       font: { family: detectedFont, titleWeight: 600, labelWeight: 400 },
       axisMode: 'dual',
-      xAxis: { show: true, title: '', fontSize: 12, rotation: 0, sort: 'default', showTitle: true, showLabels: true, showTickMarks: true, showAxisLine: true, align: 'center', maxWidth: 'none', lineColor: '#999999', tickColor: '#999999' },
+      xAxis: { show: true, title: '', fontSize: bodySize, rotation: 0, sort: 'default', showTitle: true, showLabels: true, showTickMarks: true, showAxisLine: true, align: 'center', maxWidth: 'none', lineColor: '#999999', tickColor: '#999999' },
       yAxisLeft: { show: true, title: '', min: null, max: null, format: 'auto' },
       yAxisRight: { show: true, title: '', min: null, max: null, format: 'auto' },
       grid: { horizontal: true, vertical: false, color: '#e0e0e0', opacity: 0.5 },
-      title: { show: true, text: 'Combo Chart', fontSize: 18, color: '#333333' },
-      barLabels: { show: false, position: 'top', fontSize: 10, color: '#333333' },
-      lineLabels: { show: false, position: 'top', fontSize: 10, color: '#333333' },
+      title: { show: true, text: 'Combo Chart', fontSize: titleSize, color: '#333333' },
+      barLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto' },
+      lineLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto' },
       legend: { show: true, position: 'bottom', bar1Label: '', bar2Label: '', lineLabel: '' },
-      tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, bgColor: '#333333', textColor: '#ffffff', fontSize: 12 },
+      tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, bgColor: '#333333', textColor: '#ffffff', fontSize: bodySize },
       headerControls: { showLegendToggle: true, showSettingsCog: true },
-      titleFont: { family: detectedFont, size: 18, weight: 600, color: '#333333', italic: false },
-      xAxisFont: { family: detectedFont, size: 12, weight: 400, color: '#666666', italic: false },
-      yAxisFont: { family: detectedFont, size: 12, weight: 400, color: '#666666', italic: false },
-      legendFont: { family: detectedFont, size: 12, weight: 400, color: '#333333', italic: false },
-      barLabelFont: { family: detectedFont, size: 10, weight: 400, color: '#333333', italic: false },
-      lineLabelFont: { family: detectedFont, size: 10, weight: 400, color: '#333333', italic: false },
-      tooltipFont: { family: detectedFont, size: 12, weight: 400, color: '#ffffff', italic: false }
+      titleFont: { family: detectedFont, size: titleSize, weight: 600, color: '#333333', italic: false },
+      xAxisFont: { family: detectedFont, size: bodySize, weight: 400, color: '#666666', italic: false },
+      yAxisFont: { family: detectedFont, size: bodySize, weight: 400, color: '#666666', italic: false },
+      legendFont: { family: detectedFont, size: bodySize, weight: 400, color: '#333333', italic: false },
+      barLabelFont: { family: detectedFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      lineLabelFont: { family: detectedFont, size: labelSize, weight: 400, color: '#333333', italic: false },
+      tooltipFont: { family: detectedFont, size: bodySize, weight: 400, color: '#ffffff', italic: false }
     };
   }
 
@@ -453,10 +459,12 @@
     elements.titleColor = document.getElementById('title-color');
     elements.showBarLabels = document.getElementById('show-bar-labels');
     elements.barLabelPosition = document.getElementById('bar-label-position');
+    elements.barLabelFormat = document.getElementById('bar-label-format');
     elements.barLabelFontSize = document.getElementById('bar-label-font-size');
     elements.barLabelColor = document.getElementById('bar-label-color');
     elements.showLineLabels = document.getElementById('show-line-labels');
     elements.lineLabelPosition = document.getElementById('line-label-position');
+    elements.lineLabelFormat = document.getElementById('line-label-format');
     elements.lineLabelFontSize = document.getElementById('line-label-font-size');
     elements.lineLabelColor = document.getElementById('line-label-color');
     elements.showLegend = document.getElementById('show-legend');
@@ -759,6 +767,23 @@
   }
 
   /**
+   * Parse a font size string (e.g., "9pt", "12px") to pixels
+   */
+  function parseFontSize(sizeStr) {
+    if (!sizeStr) return null;
+    const str = String(sizeStr).trim().toLowerCase();
+    const match = str.match(/^([\d.]+)\s*(pt|px|em|rem)?$/);
+    if (!match) return null;
+    const value = parseFloat(match[1]);
+    if (isNaN(value)) return null;
+    const unit = match[2] || 'pt';
+    if (unit === 'pt') return Math.round(value * 1.333);
+    if (unit === 'px') return Math.round(value);
+    if (unit === 'em' || unit === 'rem') return Math.round(value * 16);
+    return Math.round(value);
+  }
+
+  /**
    * Get the primary workbook font (from worksheet body text)
    */
   function getWorkbookFont() {
@@ -771,25 +796,35 @@
       formatting?.dashboardTitle
     ];
 
+    let fontFamily = null;
+    let fontLabel = null;
+    let fontPrimary = null;
+
     for (const source of sources) {
-      if (source && source.fontName) {
-        let fontName = source.fontName;
-        // Clean up the font name (remove quotes if present)
-        fontName = fontName.replace(/['"]/g, '').trim();
-
-        // Build a proper font-family stack
-        const fontStack = buildFontStack(fontName);
-
-        return {
-          family: fontStack,
-          label: fontName,
-          primary: fontName,
-          isWorkbookFont: true
-        };
+      if (source && source.fontName && !fontFamily) {
+        let fontName = source.fontName.replace(/['"]/g, '').trim();
+        fontFamily = buildFontStack(fontName);
+        fontLabel = fontName;
+        fontPrimary = fontName;
       }
     }
 
-    return null;
+    // Extract font sizes
+    const worksheetFontSize = formatting?.worksheet?.fontSize
+      ? parseFontSize(formatting.worksheet.fontSize) : null;
+    const worksheetTitleFontSize = formatting?.worksheetTitle?.fontSize
+      ? parseFontSize(formatting.worksheetTitle.fontSize) : null;
+
+    if (!fontFamily && !worksheetFontSize && !worksheetTitleFontSize) return null;
+
+    return {
+      family: fontFamily,
+      label: fontLabel,
+      primary: fontPrimary,
+      isWorkbookFont: true,
+      worksheetFontSize,
+      worksheetTitleFontSize
+    };
   }
 
   /**
@@ -1361,16 +1396,18 @@
     // Bar labels
     safeSetChecked(elements.showBarLabels, config.barLabels.show);
     safeSetValue(elements.barLabelPosition, config.barLabels.position);
+    safeSetValue(elements.barLabelFormat, config.barLabels.format || 'auto');
     safeSetValue(elements.barLabelFontSize, config.barLabels.fontSize);
-    safeSetValue(elements.barLabelColor, config.barLabels.color);
+    safeSetValue(elements.barLabelColor, config.barLabelFont?.color || config.barLabels.color);
     safeSetValue(elements.barLabelOffsetX, config.barLabels.offsetX || 0);
     safeSetValue(elements.barLabelOffsetY, config.barLabels.offsetY || 0);
 
     // Line labels
     safeSetChecked(elements.showLineLabels, config.lineLabels.show);
     safeSetValue(elements.lineLabelPosition, config.lineLabels.position);
+    safeSetValue(elements.lineLabelFormat, config.lineLabels.format || 'auto');
     safeSetValue(elements.lineLabelFontSize, config.lineLabels.fontSize);
-    safeSetValue(elements.lineLabelColor, config.lineLabels.color);
+    safeSetValue(elements.lineLabelColor, config.lineLabelFont?.color || config.lineLabels.color);
     safeSetValue(elements.lineLabelOffsetX, config.lineLabels.offsetX || 0);
     safeSetValue(elements.lineLabelOffsetY, config.lineLabels.offsetY || 0);
 
@@ -1557,8 +1594,8 @@
     safeAddListener(elements.pointStroke, 'change', (e) => config.points.stroke = e.target.value);
     safeAddListener(elements.gridColor, 'change', (e) => config.grid.color = e.target.value);
     safeAddListener(elements.titleColor, 'change', (e) => config.title.color = e.target.value);
-    safeAddListener(elements.barLabelColor, 'change', (e) => config.barLabels.color = e.target.value);
-    safeAddListener(elements.lineLabelColor, 'change', (e) => config.lineLabels.color = e.target.value);
+    // barLabelColor and lineLabelColor handlers are in the font settings section below
+    // (they set both legacy .color AND font object .color)
     safeAddListener(elements.tooltipBgColor, 'change', (e) => config.tooltip.bgColor = e.target.value);
     safeAddListener(elements.tooltipTextColor, 'change', (e) => config.tooltip.textColor = e.target.value);
 
@@ -1581,7 +1618,9 @@
     safeAddListener(elements.yAxisLeftFormat, 'change', (e) => config.yAxisLeft.format = e.target.value);
     safeAddListener(elements.yAxisRightFormat, 'change', (e) => config.yAxisRight.format = e.target.value);
     safeAddListener(elements.barLabelPosition, 'change', (e) => config.barLabels.position = e.target.value);
+    safeAddListener(elements.barLabelFormat, 'change', (e) => config.barLabels.format = e.target.value);
     safeAddListener(elements.lineLabelPosition, 'change', (e) => config.lineLabels.position = e.target.value);
+    safeAddListener(elements.lineLabelFormat, 'change', (e) => config.lineLabels.format = e.target.value);
     safeAddListener(elements.legendPosition, 'change', (e) => config.legend.position = e.target.value);
     safeAddListener(elements.legendBar1Label, 'change', (e) => config.legend.bar1Label = e.target.value);
     safeAddListener(elements.legendBar2Label, 'change', (e) => config.legend.bar2Label = e.target.value);
