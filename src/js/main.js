@@ -71,7 +71,13 @@
     } catch (error) {
       const errorMsg = error.message || error.toString() || 'Unknown error';
       log('ERROR: Initialization error: ' + errorMsg);
-      showError(`Failed to initialize extension: ${errorMsg}`);
+
+      // Check if this is the "not inside Tableau" error
+      if (errorMsg.includes('not running inside') || errorMsg.includes('iframe')) {
+        showStandaloneMessage();
+      } else {
+        showError(`Failed to initialize extension: ${errorMsg}`);
+      }
     }
   }
 
