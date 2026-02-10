@@ -773,53 +773,76 @@
   }
 
   /**
+   * Safely set value on an element (helper to prevent null errors)
+   */
+  function safeSetValue(element, value) {
+    if (element && value !== undefined) {
+      element.value = value;
+    }
+  }
+
+  function safeSetText(element, text) {
+    if (element && text !== undefined) {
+      element.textContent = text;
+    }
+  }
+
+  function safeSetChecked(element, checked) {
+    if (element) {
+      element.checked = !!checked;
+    }
+  }
+
+  /**
    * Populate form with current configuration
    */
   function populateForm() {
+    console.log('Populating form with config:', config);
+
     // Bar style radio
     const barStyleRadio = document.querySelector(`input[name="bar-style"][value="${config.barStyle}"]`);
     if (barStyleRadio) barStyleRadio.checked = true;
 
     // Bar padding
-    elements.barPadding.value = config.barPadding;
-    elements.barPaddingValue.textContent = config.barPadding;
+    safeSetValue(elements.barPadding, config.barPadding);
+    safeSetText(elements.barPaddingValue, config.barPadding);
 
     // Bar 1 settings
-    elements.bar1Color.value = config.bar1.color;
-    elements.bar1Opacity.value = config.bar1.opacity;
-    elements.bar1OpacityValue.textContent = config.bar1.opacity;
-    if (elements.bar1ShowBorder) elements.bar1ShowBorder.checked = config.bar1.showBorder !== false;
-    elements.bar1BorderColor.value = config.bar1.borderColor;
-    elements.bar1BorderWidth.value = config.bar1.borderWidth;
-    elements.bar1CornerRadius.value = config.bar1.cornerRadius;
-    elements.bar1CornerRadiusValue.textContent = config.bar1.cornerRadius;
-    updateBar1BorderVisibility();
+    safeSetValue(elements.bar1Color, config.bar1.color);
+    safeSetValue(elements.bar1Opacity, config.bar1.opacity);
+    safeSetText(elements.bar1OpacityValue, config.bar1.opacity);
+    safeSetChecked(elements.bar1ShowBorder, config.bar1.showBorder !== false);
+    safeSetValue(elements.bar1BorderColor, config.bar1.borderColor);
+    safeSetValue(elements.bar1BorderWidth, config.bar1.borderWidth);
+    safeSetValue(elements.bar1CornerRadius, config.bar1.cornerRadius);
+    safeSetText(elements.bar1CornerRadiusValue, config.bar1.cornerRadius);
+    if (typeof updateBar1BorderVisibility === 'function') updateBar1BorderVisibility();
 
     // Bar 2 settings
-    elements.bar2Color.value = config.bar2.color;
-    elements.bar2Opacity.value = config.bar2.opacity;
-    elements.bar2OpacityValue.textContent = config.bar2.opacity;
-    if (elements.bar2ShowBorder) elements.bar2ShowBorder.checked = config.bar2.showBorder !== false;
-    elements.bar2BorderColor.value = config.bar2.borderColor;
-    elements.bar2BorderWidth.value = config.bar2.borderWidth;
-    elements.bar2CornerRadius.value = config.bar2.cornerRadius;
-    elements.bar2CornerRadiusValue.textContent = config.bar2.cornerRadius;
-    updateBar2BorderVisibility();
+    safeSetValue(elements.bar2Color, config.bar2.color);
+    safeSetValue(elements.bar2Opacity, config.bar2.opacity);
+    safeSetText(elements.bar2OpacityValue, config.bar2.opacity);
+    safeSetChecked(elements.bar2ShowBorder, config.bar2.showBorder !== false);
+    safeSetValue(elements.bar2BorderColor, config.bar2.borderColor);
+    safeSetValue(elements.bar2BorderWidth, config.bar2.borderWidth);
+    safeSetValue(elements.bar2CornerRadius, config.bar2.cornerRadius);
+    safeSetText(elements.bar2CornerRadiusValue, config.bar2.cornerRadius);
+    if (typeof updateBar2BorderVisibility === 'function') updateBar2BorderVisibility();
 
     // Line settings
-    elements.lineColor.value = config.line.color;
-    elements.lineOpacity.value = config.line.opacity;
-    elements.lineOpacityValue.textContent = config.line.opacity;
-    elements.lineWidth.value = config.line.width;
-    elements.lineStyle.value = config.line.style;
-    elements.lineCurve.value = config.line.curve;
+    safeSetValue(elements.lineColor, config.line.color);
+    safeSetValue(elements.lineOpacity, config.line.opacity);
+    safeSetText(elements.lineOpacityValue, config.line.opacity);
+    safeSetValue(elements.lineWidth, config.line.width);
+    safeSetValue(elements.lineStyle, config.line.style);
+    safeSetValue(elements.lineCurve, config.line.curve);
 
     // Points settings
-    elements.showPoints.checked = config.points.show;
-    elements.pointSize.value = config.points.size;
-    elements.pointShape.value = config.points.shape;
-    elements.pointFill.value = config.points.fill;
-    elements.pointStroke.value = config.points.stroke;
+    safeSetChecked(elements.showPoints, config.points.show);
+    safeSetValue(elements.pointSize, config.points.size);
+    safeSetValue(elements.pointShape, config.points.shape);
+    safeSetValue(elements.pointFill, config.points.fill);
+    safeSetValue(elements.pointStroke, config.points.stroke);
 
     // Axis mode radio
     const axisModeRadio = document.querySelector(`input[name="axis-mode"][value="${config.axisMode}"]`);
@@ -832,172 +855,174 @@
     updateSyncAxisVisibility();
 
     // X-axis settings
-    elements.xAxisShow.checked = config.xAxis.show;
-    elements.xAxisTitle.value = config.xAxis.title;
-    elements.xAxisFontSize.value = config.xAxis.fontSize;
-    elements.xAxisRotation.value = config.xAxis.rotation;
-    if (elements.xAxisShowTitle) elements.xAxisShowTitle.checked = config.xAxis.showTitle !== false;
-    if (elements.xAxisShowLabels) elements.xAxisShowLabels.checked = config.xAxis.showLabels !== false;
-    if (elements.xAxisShowTicks) elements.xAxisShowTicks.checked = config.xAxis.showTickMarks !== false;
-    if (elements.xAxisShowLine) elements.xAxisShowLine.checked = config.xAxis.showAxisLine !== false;
-    if (elements.xAxisLineColor) elements.xAxisLineColor.value = config.xAxis.lineColor || '#999999';
-    if (elements.xAxisAlign) elements.xAxisAlign.value = config.xAxis.align || 'center';
-    if (elements.xAxisSort) elements.xAxisSort.value = config.xAxis.sort || 'default';
-    if (elements.xAxisMaxWidth) elements.xAxisMaxWidth.value = config.xAxis.maxWidth || 'none';
+    safeSetChecked(elements.xAxisShow, config.xAxis.show);
+    safeSetValue(elements.xAxisTitle, config.xAxis.title);
+    safeSetValue(elements.xAxisFontSize, config.xAxis.fontSize);
+    safeSetValue(elements.xAxisRotation, config.xAxis.rotation);
+    safeSetChecked(elements.xAxisShowTitle, config.xAxis.showTitle !== false);
+    safeSetChecked(elements.xAxisShowLabels, config.xAxis.showLabels !== false);
+    safeSetChecked(elements.xAxisShowTicks, config.xAxis.showTickMarks !== false);
+    safeSetChecked(elements.xAxisShowLine, config.xAxis.showAxisLine !== false);
+    safeSetValue(elements.xAxisLineColor, config.xAxis.lineColor || '#999999');
+    safeSetValue(elements.xAxisAlign, config.xAxis.align || 'center');
+    safeSetValue(elements.xAxisSort, config.xAxis.sort || 'default');
+    safeSetValue(elements.xAxisMaxWidth, config.xAxis.maxWidth || 'none');
 
     // Y-axis left settings
-    elements.yAxisLeftShow.checked = config.yAxisLeft.show;
-    elements.yAxisLeftTitle.value = config.yAxisLeft.title;
-    elements.yAxisLeftMin.value = config.yAxisLeft.min || '';
-    elements.yAxisLeftMax.value = config.yAxisLeft.max || '';
-    elements.yAxisLeftFormat.value = config.yAxisLeft.format;
-    if (elements.yAxisLeftShowTitle) elements.yAxisLeftShowTitle.checked = config.yAxisLeft.showTitle !== false;
-    if (elements.yAxisLeftShowLabels) elements.yAxisLeftShowLabels.checked = config.yAxisLeft.showLabels !== false;
-    if (elements.yAxisLeftShowTicks) elements.yAxisLeftShowTicks.checked = config.yAxisLeft.showTickMarks !== false;
-    if (elements.yAxisLeftShowLine) elements.yAxisLeftShowLine.checked = config.yAxisLeft.showAxisLine !== false;
-    if (elements.yAxisLineColor) elements.yAxisLineColor.value = config.yAxisLeft.lineColor || '#999999';
+    safeSetChecked(elements.yAxisLeftShow, config.yAxisLeft.show);
+    safeSetValue(elements.yAxisLeftTitle, config.yAxisLeft.title);
+    safeSetValue(elements.yAxisLeftMin, config.yAxisLeft.min || '');
+    safeSetValue(elements.yAxisLeftMax, config.yAxisLeft.max || '');
+    safeSetValue(elements.yAxisLeftFormat, config.yAxisLeft.format);
+    safeSetChecked(elements.yAxisLeftShowTitle, config.yAxisLeft.showTitle !== false);
+    safeSetChecked(elements.yAxisLeftShowLabels, config.yAxisLeft.showLabels !== false);
+    safeSetChecked(elements.yAxisLeftShowTicks, config.yAxisLeft.showTickMarks !== false);
+    safeSetChecked(elements.yAxisLeftShowLine, config.yAxisLeft.showAxisLine !== false);
+    safeSetValue(elements.yAxisLineColor, config.yAxisLeft.lineColor || '#999999');
 
     // Y-axis right settings
-    elements.yAxisRightShow.checked = config.yAxisRight.show;
-    elements.yAxisRightTitle.value = config.yAxisRight.title;
-    elements.yAxisRightMin.value = config.yAxisRight.min || '';
-    elements.yAxisRightMax.value = config.yAxisRight.max || '';
-    elements.yAxisRightFormat.value = config.yAxisRight.format;
-    if (elements.yAxisRightShowTitle) elements.yAxisRightShowTitle.checked = config.yAxisRight.showTitle !== false;
-    if (elements.yAxisRightShowLabels) elements.yAxisRightShowLabels.checked = config.yAxisRight.showLabels !== false;
-    if (elements.yAxisRightShowTicks) elements.yAxisRightShowTicks.checked = config.yAxisRight.showTickMarks !== false;
-    if (elements.yAxisRightShowLine) elements.yAxisRightShowLine.checked = config.yAxisRight.showAxisLine !== false;
+    safeSetChecked(elements.yAxisRightShow, config.yAxisRight.show);
+    safeSetValue(elements.yAxisRightTitle, config.yAxisRight.title);
+    safeSetValue(elements.yAxisRightMin, config.yAxisRight.min || '');
+    safeSetValue(elements.yAxisRightMax, config.yAxisRight.max || '');
+    safeSetValue(elements.yAxisRightFormat, config.yAxisRight.format);
+    safeSetChecked(elements.yAxisRightShowTitle, config.yAxisRight.showTitle !== false);
+    safeSetChecked(elements.yAxisRightShowLabels, config.yAxisRight.showLabels !== false);
+    safeSetChecked(elements.yAxisRightShowTicks, config.yAxisRight.showTickMarks !== false);
+    safeSetChecked(elements.yAxisRightShowLine, config.yAxisRight.showAxisLine !== false);
 
     // Grid settings
-    elements.gridHorizontal.checked = config.grid.horizontal;
-    elements.gridVertical.checked = config.grid.vertical;
-    elements.gridColor.value = config.grid.color;
-    elements.gridOpacity.value = config.grid.opacity;
-    elements.gridOpacityValue.textContent = config.grid.opacity;
+    safeSetChecked(elements.gridHorizontal, config.grid.horizontal);
+    safeSetChecked(elements.gridVertical, config.grid.vertical);
+    safeSetValue(elements.gridColor, config.grid.color);
+    safeSetValue(elements.gridOpacity, config.grid.opacity);
+    safeSetText(elements.gridOpacityValue, config.grid.opacity);
 
     // Title settings
-    elements.showTitle.checked = config.title.show;
-    elements.chartTitle.value = config.title.text;
-    elements.titleFontSize.value = config.title.fontSize;
-    elements.titleColor.value = config.title.color;
-    if (elements.titleBgColor) elements.titleBgColor.value = config.title.bgColor === 'transparent' ? '#ffffff' : (config.title.bgColor || '#ffffff');
-    if (elements.titleBgTransparent) elements.titleBgTransparent.checked = config.title.bgColor === 'transparent' || !config.title.bgColor;
+    safeSetChecked(elements.showTitle, config.title.show);
+    safeSetValue(elements.chartTitle, config.title.text);
+    safeSetValue(elements.titleFontSize, config.title.fontSize);
+    safeSetValue(elements.titleColor, config.title.color);
+    safeSetValue(elements.titleBgColor, config.title.bgColor === 'transparent' ? '#ffffff' : (config.title.bgColor || '#ffffff'));
+    safeSetChecked(elements.titleBgTransparent, config.title.bgColor === 'transparent' || !config.title.bgColor);
 
     // Bar labels
-    elements.showBarLabels.checked = config.barLabels.show;
-    elements.barLabelPosition.value = config.barLabels.position;
-    elements.barLabelFontSize.value = config.barLabels.fontSize;
-    elements.barLabelColor.value = config.barLabels.color;
-    if (elements.barLabelOffsetX) elements.barLabelOffsetX.value = config.barLabels.offsetX || 0;
-    if (elements.barLabelOffsetY) elements.barLabelOffsetY.value = config.barLabels.offsetY || 0;
+    safeSetChecked(elements.showBarLabels, config.barLabels.show);
+    safeSetValue(elements.barLabelPosition, config.barLabels.position);
+    safeSetValue(elements.barLabelFontSize, config.barLabels.fontSize);
+    safeSetValue(elements.barLabelColor, config.barLabels.color);
+    safeSetValue(elements.barLabelOffsetX, config.barLabels.offsetX || 0);
+    safeSetValue(elements.barLabelOffsetY, config.barLabels.offsetY || 0);
 
     // Line labels
-    elements.showLineLabels.checked = config.lineLabels.show;
-    elements.lineLabelPosition.value = config.lineLabels.position;
-    elements.lineLabelFontSize.value = config.lineLabels.fontSize;
-    elements.lineLabelColor.value = config.lineLabels.color;
-    if (elements.lineLabelOffsetX) elements.lineLabelOffsetX.value = config.lineLabels.offsetX || 0;
-    if (elements.lineLabelOffsetY) elements.lineLabelOffsetY.value = config.lineLabels.offsetY || 0;
+    safeSetChecked(elements.showLineLabels, config.lineLabels.show);
+    safeSetValue(elements.lineLabelPosition, config.lineLabels.position);
+    safeSetValue(elements.lineLabelFontSize, config.lineLabels.fontSize);
+    safeSetValue(elements.lineLabelColor, config.lineLabels.color);
+    safeSetValue(elements.lineLabelOffsetX, config.lineLabels.offsetX || 0);
+    safeSetValue(elements.lineLabelOffsetY, config.lineLabels.offsetY || 0);
 
     // Legend
-    elements.showLegend.checked = config.legend.show;
-    elements.legendPosition.value = config.legend.position;
-    if (elements.legendBar1Label) elements.legendBar1Label.value = config.legend.bar1Label || '';
-    if (elements.legendBar2Label) elements.legendBar2Label.value = config.legend.bar2Label || '';
-    if (elements.legendLineLabel) elements.legendLineLabel.value = config.legend.lineLabel || '';
-    if (elements.legendBgColor) elements.legendBgColor.value = config.legend.bgColor === 'transparent' ? '#f8fafc' : (config.legend.bgColor || '#f8fafc');
-    if (elements.legendBgTransparent) elements.legendBgTransparent.checked = config.legend.bgColor === 'transparent' || !config.legend.bgColor;
+    safeSetChecked(elements.showLegend, config.legend.show);
+    safeSetValue(elements.legendPosition, config.legend.position);
+    safeSetValue(elements.legendBar1Label, config.legend.bar1Label || '');
+    safeSetValue(elements.legendBar2Label, config.legend.bar2Label || '');
+    safeSetValue(elements.legendLineLabel, config.legend.lineLabel || '');
+    safeSetValue(elements.legendBgColor, config.legend.bgColor === 'transparent' ? '#f8fafc' : (config.legend.bgColor || '#f8fafc'));
+    safeSetChecked(elements.legendBgTransparent, config.legend.bgColor === 'transparent' || !config.legend.bgColor);
 
     // Tooltip
-    elements.showTooltip.checked = config.tooltip.show;
-    elements.tooltipShowDimension.checked = config.tooltip.showDimension;
-    elements.tooltipShowMeasureName.checked = config.tooltip.showMeasureName;
-    elements.tooltipShowValue.checked = config.tooltip.showValue;
-    elements.tooltipBgColor.value = config.tooltip.bgColor;
-    elements.tooltipTextColor.value = config.tooltip.textColor;
-    elements.tooltipFontSize.value = config.tooltip.fontSize;
+    safeSetChecked(elements.showTooltip, config.tooltip.show);
+    safeSetChecked(elements.tooltipShowDimension, config.tooltip.showDimension);
+    safeSetChecked(elements.tooltipShowMeasureName, config.tooltip.showMeasureName);
+    safeSetChecked(elements.tooltipShowValue, config.tooltip.showValue);
+    safeSetValue(elements.tooltipBgColor, config.tooltip.bgColor);
+    safeSetValue(elements.tooltipTextColor, config.tooltip.textColor);
+    safeSetValue(elements.tooltipFontSize, config.tooltip.fontSize);
 
     // Animation settings
     if (config.animation) {
-      elements.animationEnabled.checked = config.animation.enabled;
-      elements.animationDuration.value = config.animation.duration;
-      elements.animationDurationValue.textContent = config.animation.duration;
-      elements.animationEasing.value = config.animation.easing;
+      safeSetChecked(elements.animationEnabled, config.animation.enabled);
+      safeSetValue(elements.animationDuration, config.animation.duration);
+      safeSetText(elements.animationDurationValue, config.animation.duration);
+      safeSetValue(elements.animationEasing, config.animation.easing);
     }
 
     // Font settings
     if (config.font) {
-      elements.fontFamily.value = config.font.family;
-      elements.titleWeight.value = config.font.titleWeight;
-      elements.labelWeight.value = config.font.labelWeight;
+      safeSetValue(elements.fontFamily, config.font.family);
+      safeSetValue(elements.titleWeight, config.font.titleWeight);
+      safeSetValue(elements.labelWeight, config.font.labelWeight);
     }
 
     // Header controls
     if (config.headerControls) {
-      if (elements.showLegendToggle) elements.showLegendToggle.checked = config.headerControls.showLegendToggle !== false;
-      if (elements.showSettingsCog) elements.showSettingsCog.checked = config.headerControls.showSettingsCog !== false;
+      safeSetChecked(elements.showLegendToggle, config.headerControls.showLegendToggle !== false);
+      safeSetChecked(elements.showSettingsCog, config.headerControls.showSettingsCog !== false);
     }
 
     // Individual font settings
     if (config.titleFont) {
-      if (elements.titleFontFamily) elements.titleFontFamily.value = config.titleFont.family || '';
-      if (elements.titleFontWeight) elements.titleFontWeight.value = config.titleFont.weight || 600;
-      if (elements.titleItalic) elements.titleItalic.checked = config.titleFont.italic || false;
+      safeSetValue(elements.titleFontFamily, config.titleFont.family || '');
+      safeSetValue(elements.titleFontWeight, config.titleFont.weight || 600);
+      safeSetChecked(elements.titleItalic, config.titleFont.italic || false);
     }
     if (config.xAxisFont) {
-      if (elements.xAxisFontFamily) elements.xAxisFontFamily.value = config.xAxisFont.family || '';
-      if (elements.xAxisFontWeight) elements.xAxisFontWeight.value = config.xAxisFont.weight || 400;
-      if (elements.xAxisFontColor) elements.xAxisFontColor.value = config.xAxisFont.color || '#666666';
+      safeSetValue(elements.xAxisFontFamily, config.xAxisFont.family || '');
+      safeSetValue(elements.xAxisFontWeight, config.xAxisFont.weight || 400);
+      safeSetValue(elements.xAxisFontColor, config.xAxisFont.color || '#666666');
     }
     if (config.yAxisFont) {
-      if (elements.yAxisFontFamily) elements.yAxisFontFamily.value = config.yAxisFont.family || '';
-      if (elements.yAxisFontSize) elements.yAxisFontSize.value = config.yAxisFont.size || 12;
-      if (elements.yAxisFontWeight) elements.yAxisFontWeight.value = config.yAxisFont.weight || 400;
-      if (elements.yAxisFontColor) elements.yAxisFontColor.value = config.yAxisFont.color || '#666666';
+      safeSetValue(elements.yAxisFontFamily, config.yAxisFont.family || '');
+      safeSetValue(elements.yAxisFontSize, config.yAxisFont.size || 12);
+      safeSetValue(elements.yAxisFontWeight, config.yAxisFont.weight || 400);
+      safeSetValue(elements.yAxisFontColor, config.yAxisFont.color || '#666666');
     }
     if (config.legendFont) {
-      if (elements.legendFontFamily) elements.legendFontFamily.value = config.legendFont.family || '';
-      if (elements.legendFontSize) elements.legendFontSize.value = config.legendFont.size || 12;
-      if (elements.legendFontWeight) elements.legendFontWeight.value = config.legendFont.weight || 400;
-      if (elements.legendFontColor) elements.legendFontColor.value = config.legendFont.color || '#333333';
-      if (elements.legendItalic) elements.legendItalic.checked = config.legendFont.italic || false;
+      safeSetValue(elements.legendFontFamily, config.legendFont.family || '');
+      safeSetValue(elements.legendFontSize, config.legendFont.size || 12);
+      safeSetValue(elements.legendFontWeight, config.legendFont.weight || 400);
+      safeSetValue(elements.legendFontColor, config.legendFont.color || '#333333');
+      safeSetChecked(elements.legendItalic, config.legendFont.italic || false);
     }
     if (config.barLabelFont) {
-      if (elements.barLabelFontFamily) elements.barLabelFontFamily.value = config.barLabelFont.family || '';
-      if (elements.barLabelFontWeight) elements.barLabelFontWeight.value = config.barLabelFont.weight || 400;
-      if (elements.barLabelItalic) elements.barLabelItalic.checked = config.barLabelFont.italic || false;
+      safeSetValue(elements.barLabelFontFamily, config.barLabelFont.family || '');
+      safeSetValue(elements.barLabelFontWeight, config.barLabelFont.weight || 400);
+      safeSetChecked(elements.barLabelItalic, config.barLabelFont.italic || false);
     }
     // Bar 1 label font
     if (config.bar1LabelFont) {
-      if (elements.bar1LabelFontFamily) elements.bar1LabelFontFamily.value = config.bar1LabelFont.family || '';
-      if (elements.bar1LabelFontSize) elements.bar1LabelFontSize.value = config.bar1LabelFont.size || 10;
-      if (elements.bar1LabelFontWeight) elements.bar1LabelFontWeight.value = config.bar1LabelFont.weight || 400;
-      if (elements.bar1LabelColor) elements.bar1LabelColor.value = config.bar1LabelFont.color || '#333333';
-      if (elements.bar1LabelItalic) elements.bar1LabelItalic.checked = config.bar1LabelFont.italic || false;
+      safeSetValue(elements.bar1LabelFontFamily, config.bar1LabelFont.family || '');
+      safeSetValue(elements.bar1LabelFontSize, config.bar1LabelFont.size || 10);
+      safeSetValue(elements.bar1LabelFontWeight, config.bar1LabelFont.weight || 400);
+      safeSetValue(elements.bar1LabelColor, config.bar1LabelFont.color || '#333333');
+      safeSetChecked(elements.bar1LabelItalic, config.bar1LabelFont.italic || false);
     }
     // Bar 2 label font
     if (config.bar2LabelFont) {
-      if (elements.bar2LabelFontFamily) elements.bar2LabelFontFamily.value = config.bar2LabelFont.family || '';
-      if (elements.bar2LabelFontSize) elements.bar2LabelFontSize.value = config.bar2LabelFont.size || 10;
-      if (elements.bar2LabelFontWeight) elements.bar2LabelFontWeight.value = config.bar2LabelFont.weight || 400;
-      if (elements.bar2LabelColor) elements.bar2LabelColor.value = config.bar2LabelFont.color || '#333333';
-      if (elements.bar2LabelItalic) elements.bar2LabelItalic.checked = config.bar2LabelFont.italic || false;
+      safeSetValue(elements.bar2LabelFontFamily, config.bar2LabelFont.family || '');
+      safeSetValue(elements.bar2LabelFontSize, config.bar2LabelFont.size || 10);
+      safeSetValue(elements.bar2LabelFontWeight, config.bar2LabelFont.weight || 400);
+      safeSetValue(elements.bar2LabelColor, config.bar2LabelFont.color || '#333333');
+      safeSetChecked(elements.bar2LabelItalic, config.bar2LabelFont.italic || false);
     }
     if (config.lineLabelFont) {
-      if (elements.lineLabelFontFamily) elements.lineLabelFontFamily.value = config.lineLabelFont.family || '';
-      if (elements.lineLabelFontWeight) elements.lineLabelFontWeight.value = config.lineLabelFont.weight || 400;
-      if (elements.lineLabelItalic) elements.lineLabelItalic.checked = config.lineLabelFont.italic || false;
+      safeSetValue(elements.lineLabelFontFamily, config.lineLabelFont.family || '');
+      safeSetValue(elements.lineLabelFontWeight, config.lineLabelFont.weight || 400);
+      safeSetChecked(elements.lineLabelItalic, config.lineLabelFont.italic || false);
     }
     if (config.tooltipFont) {
-      if (elements.tooltipFontFamily) elements.tooltipFontFamily.value = config.tooltipFont.family || '';
-      if (elements.tooltipFontWeight) elements.tooltipFontWeight.value = config.tooltipFont.weight || 400;
+      safeSetValue(elements.tooltipFontFamily, config.tooltipFont.family || '');
+      safeSetValue(elements.tooltipFontWeight, config.tooltipFont.weight || 400);
     }
 
-    // Update UI state
-    updatePointsOptionsVisibility();
-    updateYAxisRightVisibility();
-    updateAnimationOptionsVisibility();
-    updateFontPreview();
+    // Update UI state - wrap in try/catch to prevent errors
+    try { if (typeof updatePointsOptionsVisibility === 'function') updatePointsOptionsVisibility(); } catch(e) { console.warn('updatePointsOptionsVisibility error:', e); }
+    try { if (typeof updateYAxisRightVisibility === 'function') updateYAxisRightVisibility(); } catch(e) { console.warn('updateYAxisRightVisibility error:', e); }
+    try { if (typeof updateAnimationOptionsVisibility === 'function') updateAnimationOptionsVisibility(); } catch(e) { console.warn('updateAnimationOptionsVisibility error:', e); }
+    try { if (typeof updateFontPreview === 'function') updateFontPreview(); } catch(e) { console.warn('updateFontPreview error:', e); }
+
+    console.log('Form population complete');
   }
 
   /**
