@@ -342,8 +342,10 @@ const ComboChart = {
 
     const self = this;
 
-    // X Axis
-    const xAxisGroup = this.chartGroup.select('.x-axis')
+    // X Axis - clear and rebuild to ensure sort order is applied
+    const xAxisGroup = this.chartGroup.select('.x-axis');
+    xAxisGroup.selectAll('*').remove();  // Clear existing axis elements
+    xAxisGroup
       .attr('transform', `translate(0, ${this.height})`)
       .on('contextmenu', function(event) {
         event.preventDefault();
@@ -1158,9 +1160,10 @@ const ComboChart = {
   updateTitle() {
     const titleElement = document.getElementById('chart-title');
     if (this.config.title.show && titleElement) {
-      // DEBUG: Show sort value in title temporarily
+      // DEBUG: Show sort value and first data item in title temporarily
       const sortValue = this.config.xAxis?.sort || 'undefined';
-      titleElement.textContent = (this.config.title.text || 'Combo Chart') + ` [Sort: ${sortValue}]`;
+      const firstItem = this.data && this.data[0] ? this.data[0].dimension : 'no data';
+      titleElement.textContent = (this.config.title.text || 'Combo Chart') + ` [Sort: ${sortValue}, First: ${firstItem}]`;
       titleElement.style.display = 'block';
       titleElement.style.cursor = 'pointer';
 
