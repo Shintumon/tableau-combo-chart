@@ -297,15 +297,16 @@
       font: { family: detectedFont, titleWeight: 600, labelWeight: 400 },
       axisMode: 'dual',
       xAxis: { show: true, title: '', fontSize: bodySize, rotation: 0, sort: 'default', showTitle: true, showLabels: true, showTickMarks: true, showAxisLine: true, align: 'center', maxWidth: 'none', lineColor: '#999999', tickColor: '#999999' },
-      yAxisLeft: { show: true, title: '', min: null, max: null, format: 'auto' },
-      yAxisRight: { show: true, title: '', min: null, max: null, format: 'auto' },
+      yAxisLeft: { show: true, title: '', min: null, max: null, format: 'auto', decimals: 0, currencySymbol: '$', includeZero: true },
+      yAxisRight: { show: true, title: '', min: null, max: null, format: 'auto', decimals: 0, currencySymbol: '$', includeZero: true },
       grid: { horizontal: true, vertical: false, color: '#e0e0e0', opacity: 0.5 },
       title: { show: true, text: 'Combo Chart', fontSize: titleSize, color: '#333333' },
-      barLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto' },
-      lineLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto' },
+      barLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto', decimals: 0, currencySymbol: '$' },
+      lineLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto', decimals: 0, currencySymbol: '$' },
       legend: { show: true, position: 'bottom', bar1Label: '', bar2Label: '', lineLabel: '' },
       tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, bgColor: '#333333', textColor: '#ffffff', fontSize: bodySize },
       headerControls: { showLegendToggle: true, showSettingsCog: true },
+      separators: { showHeaderBorder: true, showLegendBorder: true },
       titleFont: { family: detectedFont, size: titleSize, weight: 600, color: '#333333', italic: false },
       xAxisFont: { family: detectedFont, size: bodySize, weight: 400, color: '#666666', italic: false },
       yAxisFont: { family: detectedFont, size: bodySize, weight: 400, color: '#666666', italic: false },
@@ -490,6 +491,10 @@
     elements.showLegendToggle = document.getElementById('show-legend-toggle');
     elements.showSettingsCog = document.getElementById('show-settings-cog');
 
+    // Chart separators
+    elements.showHeaderBorder = document.getElementById('show-header-border');
+    elements.showLegendBorder = document.getElementById('show-legend-border');
+
     // Individual font settings
     elements.titleFontFamily = document.getElementById('title-font-family');
     elements.titleFontWeight = document.getElementById('title-font-weight');
@@ -530,6 +535,10 @@
     elements.yAxisLeftShowLine = document.getElementById('y-axis-left-show-line');
     elements.yAxisLineColor = document.getElementById('y-axis-line-color');
 
+    // Y-Axis include zero
+    elements.yAxisLeftIncludeZero = document.getElementById('y-axis-left-include-zero');
+    elements.yAxisRightIncludeZero = document.getElementById('y-axis-right-include-zero');
+
     // Y-Axis Right visibility toggles
     elements.yAxisRightShowTitle = document.getElementById('y-axis-right-show-title');
     elements.yAxisRightShowLabels = document.getElementById('y-axis-right-show-labels');
@@ -549,6 +558,24 @@
     elements.bar2LabelFontWeight = document.getElementById('bar2-label-font-weight');
     elements.bar2LabelColor = document.getElementById('bar2-label-color');
     elements.bar2LabelItalic = document.getElementById('bar2-label-italic');
+
+    // Custom format options
+    elements.barLabelFormatOptions = document.getElementById('bar-label-format-options');
+    elements.barLabelDecimals = document.getElementById('bar-label-decimals');
+    elements.barLabelCurrencySymbol = document.getElementById('bar-label-currency-symbol');
+    elements.barLabelCurrencyGroup = document.getElementById('bar-label-currency-group');
+    elements.lineLabelFormatOptions = document.getElementById('line-label-format-options');
+    elements.lineLabelDecimals = document.getElementById('line-label-decimals');
+    elements.lineLabelCurrencySymbol = document.getElementById('line-label-currency-symbol');
+    elements.lineLabelCurrencyGroup = document.getElementById('line-label-currency-group');
+    elements.yAxisLeftFormatOptions = document.getElementById('y-axis-left-format-options');
+    elements.yAxisLeftDecimals = document.getElementById('y-axis-left-decimals');
+    elements.yAxisLeftCurrencySymbol = document.getElementById('y-axis-left-currency-symbol');
+    elements.yAxisLeftCurrencyGroup = document.getElementById('y-axis-left-currency-group');
+    elements.yAxisRightFormatOptions = document.getElementById('y-axis-right-format-options');
+    elements.yAxisRightDecimals = document.getElementById('y-axis-right-decimals');
+    elements.yAxisRightCurrencySymbol = document.getElementById('y-axis-right-currency-symbol');
+    elements.yAxisRightCurrencyGroup = document.getElementById('y-axis-right-currency-group');
 
     // Legacy bar label (kept for compatibility)
     elements.barLabelFontFamily = document.getElementById('bar-label-font-family');
@@ -1380,6 +1407,10 @@
     safeSetChecked(elements.yAxisRightShowTicks, config.yAxisRight.showTickMarks !== false);
     safeSetChecked(elements.yAxisRightShowLine, config.yAxisRight.showAxisLine !== false);
 
+    // Include zero
+    safeSetChecked(elements.yAxisLeftIncludeZero, config.yAxisLeft.includeZero !== false);
+    safeSetChecked(elements.yAxisRightIncludeZero, config.yAxisRight.includeZero !== false);
+
     // Grid settings
     safeSetChecked(elements.gridHorizontal, config.grid.horizontal);
     safeSetChecked(elements.gridVertical, config.grid.vertical);
@@ -1412,6 +1443,20 @@
     safeSetValue(elements.lineLabelColor, config.lineLabelFont?.color || config.lineLabels.color);
     safeSetValue(elements.lineLabelOffsetX, config.lineLabels.offsetX || 0);
     safeSetValue(elements.lineLabelOffsetY, config.lineLabels.offsetY || 0);
+
+    // Custom format options
+    safeSetValue(elements.barLabelDecimals, config.barLabels.decimals || 0);
+    safeSetValue(elements.barLabelCurrencySymbol, config.barLabels.currencySymbol || '$');
+    updateFormatOptionsVisibility('bar-label', config.barLabels.format || 'auto');
+    safeSetValue(elements.lineLabelDecimals, config.lineLabels.decimals || 0);
+    safeSetValue(elements.lineLabelCurrencySymbol, config.lineLabels.currencySymbol || '$');
+    updateFormatOptionsVisibility('line-label', config.lineLabels.format || 'auto');
+    safeSetValue(elements.yAxisLeftDecimals, config.yAxisLeft.decimals || 0);
+    safeSetValue(elements.yAxisLeftCurrencySymbol, config.yAxisLeft.currencySymbol || '$');
+    updateFormatOptionsVisibility('y-axis-left', config.yAxisLeft.format || 'auto');
+    safeSetValue(elements.yAxisRightDecimals, config.yAxisRight.decimals || 0);
+    safeSetValue(elements.yAxisRightCurrencySymbol, config.yAxisRight.currencySymbol || '$');
+    updateFormatOptionsVisibility('y-axis-right', config.yAxisRight.format || 'auto');
 
     // Legend
     safeSetChecked(elements.showLegend, config.legend.show);
@@ -1450,6 +1495,12 @@
     if (config.headerControls) {
       safeSetChecked(elements.showLegendToggle, config.headerControls.showLegendToggle !== false);
       safeSetChecked(elements.showSettingsCog, config.headerControls.showSettingsCog !== false);
+    }
+
+    // Chart separators
+    if (config.separators) {
+      safeSetChecked(elements.showHeaderBorder, config.separators.showHeaderBorder !== false);
+      safeSetChecked(elements.showLegendBorder, config.separators.showLegendBorder !== false);
     }
 
     // Individual font settings
@@ -1615,12 +1666,24 @@
     safeAddListener(elements.lineCurve, 'change', (e) => config.line.curve = e.target.value);
     safeAddListener(elements.pointShape, 'change', (e) => config.points.shape = e.target.value);
     safeAddListener(elements.xAxisRotation, 'change', (e) => config.xAxis.rotation = parseInt(e.target.value));
-    safeAddListener(elements.yAxisLeftFormat, 'change', (e) => config.yAxisLeft.format = e.target.value);
-    safeAddListener(elements.yAxisRightFormat, 'change', (e) => config.yAxisRight.format = e.target.value);
+    safeAddListener(elements.yAxisLeftFormat, 'change', (e) => {
+      config.yAxisLeft.format = e.target.value;
+      updateFormatOptionsVisibility('y-axis-left', e.target.value);
+    });
+    safeAddListener(elements.yAxisRightFormat, 'change', (e) => {
+      config.yAxisRight.format = e.target.value;
+      updateFormatOptionsVisibility('y-axis-right', e.target.value);
+    });
     safeAddListener(elements.barLabelPosition, 'change', (e) => config.barLabels.position = e.target.value);
-    safeAddListener(elements.barLabelFormat, 'change', (e) => config.barLabels.format = e.target.value);
+    safeAddListener(elements.barLabelFormat, 'change', (e) => {
+      config.barLabels.format = e.target.value;
+      updateFormatOptionsVisibility('bar-label', e.target.value);
+    });
     safeAddListener(elements.lineLabelPosition, 'change', (e) => config.lineLabels.position = e.target.value);
-    safeAddListener(elements.lineLabelFormat, 'change', (e) => config.lineLabels.format = e.target.value);
+    safeAddListener(elements.lineLabelFormat, 'change', (e) => {
+      config.lineLabels.format = e.target.value;
+      updateFormatOptionsVisibility('line-label', e.target.value);
+    });
     safeAddListener(elements.legendPosition, 'change', (e) => config.legend.position = e.target.value);
     safeAddListener(elements.legendBar1Label, 'change', (e) => config.legend.bar1Label = e.target.value);
     safeAddListener(elements.legendBar2Label, 'change', (e) => config.legend.bar2Label = e.target.value);
@@ -1711,6 +1774,20 @@
       elements.showSettingsCog.addEventListener('change', (e) => {
         if (!config.headerControls) config.headerControls = {};
         config.headerControls.showSettingsCog = e.target.checked;
+      });
+    }
+
+    // Chart separators
+    if (elements.showHeaderBorder) {
+      elements.showHeaderBorder.addEventListener('change', (e) => {
+        if (!config.separators) config.separators = {};
+        config.separators.showHeaderBorder = e.target.checked;
+      });
+    }
+    if (elements.showLegendBorder) {
+      elements.showLegendBorder.addEventListener('change', (e) => {
+        if (!config.separators) config.separators = {};
+        config.separators.showLegendBorder = e.target.checked;
       });
     }
 
@@ -1891,6 +1968,18 @@
     if (elements.yAxisRightShowLine) {
       elements.yAxisRightShowLine.addEventListener('change', (e) => {
         config.yAxisRight.showAxisLine = e.target.checked;
+      });
+    }
+
+    // Y-Axis include zero
+    if (elements.yAxisLeftIncludeZero) {
+      elements.yAxisLeftIncludeZero.addEventListener('change', (e) => {
+        config.yAxisLeft.includeZero = e.target.checked;
+      });
+    }
+    if (elements.yAxisRightIncludeZero) {
+      elements.yAxisRightIncludeZero.addEventListener('change', (e) => {
+        config.yAxisRight.includeZero = e.target.checked;
       });
     }
 
@@ -2113,6 +2202,32 @@
       });
     }
 
+    // Custom format options - decimals and currency symbol
+    safeAddListener(elements.barLabelDecimals, 'change', (e) => {
+      config.barLabels.decimals = parseInt(e.target.value) || 0;
+    });
+    safeAddListener(elements.barLabelCurrencySymbol, 'change', (e) => {
+      config.barLabels.currencySymbol = e.target.value;
+    });
+    safeAddListener(elements.lineLabelDecimals, 'change', (e) => {
+      config.lineLabels.decimals = parseInt(e.target.value) || 0;
+    });
+    safeAddListener(elements.lineLabelCurrencySymbol, 'change', (e) => {
+      config.lineLabels.currencySymbol = e.target.value;
+    });
+    safeAddListener(elements.yAxisLeftDecimals, 'change', (e) => {
+      config.yAxisLeft.decimals = parseInt(e.target.value) || 0;
+    });
+    safeAddListener(elements.yAxisLeftCurrencySymbol, 'change', (e) => {
+      config.yAxisLeft.currencySymbol = e.target.value;
+    });
+    safeAddListener(elements.yAxisRightDecimals, 'change', (e) => {
+      config.yAxisRight.decimals = parseInt(e.target.value) || 0;
+    });
+    safeAddListener(elements.yAxisRightCurrencySymbol, 'change', (e) => {
+      config.yAxisRight.currencySymbol = e.target.value;
+    });
+
     // Tooltip font settings
     if (elements.tooltipFontFamily) {
       elements.tooltipFontFamily.addEventListener('change', (e) => {
@@ -2302,6 +2417,27 @@
         }
       });
     });
+  }
+
+  /**
+   * Update format options visibility (decimals/currency inputs)
+   * @param {string} prefix - Element ID prefix (e.g., 'bar-label', 'line-label', 'y-axis-left')
+   * @param {string} format - The selected format value
+   */
+  function updateFormatOptionsVisibility(prefix, format) {
+    const optionsRow = document.getElementById(`${prefix}-format-options`);
+    const currencyGroup = document.getElementById(`${prefix}-currency-group`);
+
+    if (optionsRow) {
+      // Show decimals/currency options for non-auto formats
+      const showOptions = format !== 'auto';
+      optionsRow.style.display = showOptions ? 'flex' : 'none';
+    }
+    if (currencyGroup) {
+      // Show currency symbol input only for currency or custom format
+      const showCurrency = format === 'currency' || format === 'custom';
+      currencyGroup.style.display = showCurrency ? 'block' : 'none';
+    }
   }
 
   /**

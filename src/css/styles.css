@@ -568,11 +568,8 @@ html, body {
   display: none;
 }
 
-/* Labels */
+/* Labels - font-size, font-weight, fill are set dynamically by D3 */
 .bar-label, .line-label {
-  font-size: 11px;
-  font-weight: 600;
-  fill: var(--gray-700);
   pointer-events: none;
   font-feature-settings: 'tnum';
 }

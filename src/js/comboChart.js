@@ -206,6 +206,7 @@ const ComboChart = {
     this.renderLabels();
     this.renderLegend();
     this.updateTitle();
+    this.applySeparators();
 
     this.isFirstRender = false;
   },
@@ -276,7 +277,9 @@ const ComboChart = {
     const lineMax = d3.max(this.data, d => d.lineValue);
 
     // Y Scale Left (for bars)
-    const yLeftMin = this.config.yAxisLeft.min !== null ? this.config.yAxisLeft.min : 0;
+    const barMin = d3.min(this.data, d => Math.min(d.bar1Value, d.bar2Value));
+    const yLeftAutoMin = this.config.yAxisLeft.includeZero !== false ? 0 : barMin * 0.9;
+    const yLeftMin = this.config.yAxisLeft.min !== null ? this.config.yAxisLeft.min : yLeftAutoMin;
     const yLeftMax = this.config.yAxisLeft.max !== null ? this.config.yAxisLeft.max : barMax * 1.1;
 
     this.yScaleLeft = d3.scaleLinear()
@@ -290,9 +293,12 @@ const ComboChart = {
       if (this.config.syncDualAxis) {
         // Sync dual axis - both axes share the same scale range
         const combinedMax = Math.max(barMax, lineMax) * 1.1;
+        const lineMinVal = d3.min(this.data, d => d.lineValue);
+        const leftAutoMin = this.config.yAxisLeft.includeZero !== false ? 0 : barMin * 0.9;
+        const rightAutoMin = this.config.yAxisRight.includeZero !== false ? 0 : lineMinVal * 0.9;
         const syncMin = Math.min(
-          this.config.yAxisLeft.min !== null ? this.config.yAxisLeft.min : 0,
-          this.config.yAxisRight.min !== null ? this.config.yAxisRight.min : 0
+          this.config.yAxisLeft.min !== null ? this.config.yAxisLeft.min : leftAutoMin,
+          this.config.yAxisRight.min !== null ? this.config.yAxisRight.min : rightAutoMin
         );
         const syncMax = Math.max(
           this.config.yAxisLeft.max !== null ? this.config.yAxisLeft.max : combinedMax,
@@ -306,7 +312,9 @@ const ComboChart = {
           .nice();
       } else {
         // Independent dual axis scales
-        const yRightMin = this.config.yAxisRight.min !== null ? this.config.yAxisRight.min : 0;
+        const lineMin = d3.min(this.data, d => d.lineValue);
+        const yRightAutoMin = this.config.yAxisRight.includeZero !== false ? 0 : lineMin * 0.9;
+        const yRightMin = this.config.yAxisRight.min !== null ? this.config.yAxisRight.min : yRightAutoMin;
         const yRightMax = this.config.yAxisRight.max !== null ? this.config.yAxisRight.max : lineMax * 1.1;
 
         this.yScaleRight = d3.scaleLinear()
@@ -317,7 +325,8 @@ const ComboChart = {
     } else {
       // Shared axis - use left scale for everything
       const combinedMax = Math.max(barMax, lineMax) * 1.1;
-      this.yScaleLeft.domain([0, this.config.yAxisLeft.max || combinedMax]).nice();
+      const sharedMin = this.config.yAxisLeft.includeZero !== false ? 0 : Math.min(barMin, d3.min(this.data, d => d.lineValue)) * 0.9;
+      this.yScaleLeft.domain([this.config.yAxisLeft.min !== null ? this.config.yAxisLeft.min : sharedMin, this.config.yAxisLeft.max || combinedMax]).nice();
       this.yScaleRight = this.yScaleLeft;
     }
   },
@@ -359,8 +368,8 @@ const ComboChart = {
    * Render axes
    */
   renderAxes() {
-    const formatLeft = Config.getFormatter(this.config.yAxisLeft.format);
-    const formatRight = Config.getFormatter(this.config.yAxisRight.format);
+    const formatLeft = Config.getFormatter(this.config.yAxisLeft.format, this.config.yAxisLeft.decimals, this.config.yAxisLeft.currencySymbol);
+    const formatRight = Config.getFormatter(this.config.yAxisRight.format, this.config.yAxisRight.decimals, this.config.yAxisRight.currencySymbol);
 
     const self = this;
 
@@ -943,7 +952,7 @@ const ComboChart = {
 
       // Bar label formatter
       const barFormat = barLabelConfig.format || 'auto';
-      const barFormatter = barFormat !== 'auto' ? Config.getFormatter(barFormat) : null;
+      const barFormatter = barFormat !== 'auto' ? Config.getFormatter(barFormat, barLabelConfig.decimals, barLabelConfig.currencySymbol) : null;
 
       // Bar 1 labels
       labelsGroup.selectAll('.bar-label-1')
@@ -1027,7 +1036,7 @@ const ComboChart = {
 
       // Line label formatter
       const lineFormat = lineLabelConfig.format || 'auto';
-      const lineFormatter = lineFormat !== 'auto' ? Config.getFormatter(lineFormat) : null;
+      const lineFormatter = lineFormat !== 'auto' ? Config.getFormatter(lineFormat, lineLabelConfig.decimals, lineLabelConfig.currencySymbol) : null;
 
       labelsGroup.selectAll('.line-label')
         .data(this.data)
@@ -1233,6 +1242,34 @@ const ComboChart = {
       }
     } else if (titleElement) {
       titleElement.style.display = 'none';
+    }
+  },
+
+  /**
+   * Apply section separator visibility
+   */
+  applySeparators() {
+    const separators = this.config.separators || {};
+    const header = document.querySelector('.chart-header');
+    const legend = document.getElementById('legend');
+
+    if (header) {
+      header.style.borderBottom = separators.showHeaderBorder === false ? 'none' : '';
+    }
+    if (legend) {
+      // Only apply border-top removal for bottom/default position
+      // Left/right positions use border-left/border-right (handled by CSS classes)
+      if (separators.showLegendBorder === false) {
+        legend.style.borderTop = 'none';
+        legend.style.borderBottom = 'none';
+        legend.style.borderLeft = 'none';
+        legend.style.borderRight = 'none';
+      } else {
+        legend.style.borderTop = '';
+        legend.style.borderBottom = '';
+        legend.style.borderLeft = '';
+        legend.style.borderRight = '';
+      }
     }
   },
 

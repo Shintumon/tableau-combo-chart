@@ -161,6 +161,9 @@ const Config = {
       min: null,
       max: null,
       format: 'auto',
+      decimals: 0,
+      currencySymbol: '$',
+      includeZero: true,
       tickColor: '#999999',
       lineColor: '#999999'
     },
@@ -175,6 +178,9 @@ const Config = {
       min: null,
       max: null,
       format: 'auto',
+      decimals: 0,
+      currencySymbol: '$',
+      includeZero: true,
       tickColor: '#999999',
       lineColor: '#999999'
     },
@@ -202,6 +208,8 @@ const Config = {
       fontSize: 10,
       color: '#333333',
       format: 'auto',
+      decimals: 0,
+      currencySymbol: '$',
       offsetX: 0,
       offsetY: 0
     },
@@ -212,6 +220,8 @@ const Config = {
       fontSize: 10,
       color: '#333333',
       format: 'auto',
+      decimals: 0,
+      currencySymbol: '$',
       offsetX: 0,
       offsetY: 0
     },
@@ -241,6 +251,12 @@ const Config = {
     headerControls: {
       showLegendToggle: true,
       showSettingsCog: true
+    },
+
+    // Section separators (borders between header/chart/legend)
+    separators: {
+      showHeaderBorder: true,
+      showLegendBorder: true
     },
 
     // Individual font settings for each text element
@@ -606,25 +622,29 @@ const Config = {
 
   /**
    * Get number formatter based on format type
+   * @param {string} format - Format type
+   * @param {number} decimals - Number of decimal places (for custom/number/currency/percent)
+   * @param {string} currencySymbol - Currency symbol (for currency format)
    */
-  getFormatter(format) {
+  getFormatter(format, decimals, currencySymbol) {
+    const d = (decimals !== undefined && decimals !== null) ? parseInt(decimals) : 0;
+    const symbol = currencySymbol || '$';
+
     switch (format) {
       case 'number':
-        return d3.format(',.0f');
-      case 'number2':
-        return d3.format(',.2f');
+        return d3.format(`,.${d}f`);
       case 'currency':
-        return d3.format('$,.0f');
-      case 'currency2':
-        return d3.format('$,.2f');
+        // Use a custom formatter to support any currency symbol
+        return (value) => symbol + d3.format(`,.${d}f`)(value);
       case 'percent':
-        return d3.format('.0%');
-      case 'percent2':
-        return d3.format('.2%');
+        return d3.format(`.${d}%`);
       case 'compact':
-        return d3.format('.2s');
+        return d3.format(`.${Math.max(1, d)}s`);
       case 'scientific':
-        return d3.format('.3e');
+        return d3.format(`.${Math.max(1, d)}e`);
+      case 'custom':
+        // Custom format uses the decimals and optional currency symbol
+        return (value) => (symbol && symbol.trim()) ? symbol + d3.format(`,.${d}f`)(value) : d3.format(`,.${d}f`)(value);
       default:
         return d3.format(',.2~f');
     }

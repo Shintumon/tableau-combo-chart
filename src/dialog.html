@@ -174,6 +174,25 @@
         </section>
 
         <section class="config-section">
+          <h3>Chart Separators</h3>
+          <p class="help-text">Control the border lines between chart sections.</p>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-header-border" checked>
+              <span>Show Header Border</span>
+            </label>
+            <p class="help-text">Border between title area and chart.</p>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-legend-border" checked>
+              <span>Show Legend Border</span>
+            </label>
+            <p class="help-text">Border between chart and legend.</p>
+          </div>
+        </section>
+
+        <section class="config-section">
           <h3>Dialog Appearance</h3>
           <p class="help-text">Customize the appearance of this settings dialog.</p>
           <div class="form-group">
@@ -581,18 +600,33 @@
             </div>
           </div>
           <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="y-axis-left-include-zero" checked>
+              <span>Include Zero</span>
+            </label>
+            <p class="help-text">When unchecked, axis starts from the minimum data value.</p>
+          </div>
+          <div class="form-group">
             <label for="y-axis-left-format">Number Format</label>
             <select id="y-axis-left-format" class="form-control">
               <option value="auto">Auto</option>
               <option value="number">Number (1,234)</option>
-              <option value="number2">Number - 2 decimals (1,234.56)</option>
               <option value="currency">Currency ($1,234)</option>
-              <option value="currency2">Currency - 2 decimals ($1,234.56)</option>
               <option value="percent">Percent (12%)</option>
-              <option value="percent2">Percent - 2 decimals (12.34%)</option>
               <option value="compact">Compact (1.2K)</option>
               <option value="scientific">Scientific (1.23e+3)</option>
+              <option value="custom">Custom...</option>
             </select>
+          </div>
+          <div class="form-row" id="y-axis-left-format-options" style="display:none;">
+            <div class="form-group">
+              <label for="y-axis-left-decimals">Decimal Places</label>
+              <input type="number" id="y-axis-left-decimals" min="0" max="6" value="0" class="form-control small">
+            </div>
+            <div class="form-group" id="y-axis-left-currency-group" style="display:none;">
+              <label for="y-axis-left-currency-symbol">Currency Symbol</label>
+              <input type="text" id="y-axis-left-currency-symbol" value="$" class="form-control small" maxlength="5" style="width:60px;">
+            </div>
           </div>
         </section>
 
@@ -645,18 +679,33 @@
             </div>
           </div>
           <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="y-axis-right-include-zero" checked>
+              <span>Include Zero</span>
+            </label>
+            <p class="help-text">When unchecked, axis starts from the minimum data value.</p>
+          </div>
+          <div class="form-group">
             <label for="y-axis-right-format">Number Format</label>
             <select id="y-axis-right-format" class="form-control">
               <option value="auto">Auto</option>
               <option value="number">Number (1,234)</option>
-              <option value="number2">Number - 2 decimals (1,234.56)</option>
               <option value="currency">Currency ($1,234)</option>
-              <option value="currency2">Currency - 2 decimals ($1,234.56)</option>
               <option value="percent">Percent (12%)</option>
-              <option value="percent2">Percent - 2 decimals (12.34%)</option>
               <option value="compact">Compact (1.2K)</option>
               <option value="scientific">Scientific (1.23e+3)</option>
+              <option value="custom">Custom...</option>
             </select>
+          </div>
+          <div class="form-row" id="y-axis-right-format-options" style="display:none;">
+            <div class="form-group">
+              <label for="y-axis-right-decimals">Decimal Places</label>
+              <input type="number" id="y-axis-right-decimals" min="0" max="6" value="0" class="form-control small">
+            </div>
+            <div class="form-group" id="y-axis-right-currency-group" style="display:none;">
+              <label for="y-axis-right-currency-symbol">Currency Symbol</label>
+              <input type="text" id="y-axis-right-currency-symbol" value="$" class="form-control small" maxlength="5" style="width:60px;">
+            </div>
           </div>
         </section>
 
@@ -767,14 +816,22 @@
               <select id="bar-label-format" class="form-control">
                 <option value="auto">Auto (Tableau)</option>
                 <option value="number">Number (1,234)</option>
-                <option value="number2">Number - 2 decimals (1,234.56)</option>
                 <option value="currency">Currency ($1,234)</option>
-                <option value="currency2">Currency - 2 decimals ($1,234.56)</option>
                 <option value="percent">Percent (12%)</option>
-                <option value="percent2">Percent - 2 decimals (12.34%)</option>
                 <option value="compact">Compact (1.2K)</option>
                 <option value="scientific">Scientific (1.23e+3)</option>
+                <option value="custom">Custom...</option>
               </select>
+            </div>
+            <div class="form-row" id="bar-label-format-options" style="display:none;">
+              <div class="form-group">
+                <label for="bar-label-decimals">Decimal Places</label>
+                <input type="number" id="bar-label-decimals" min="0" max="6" value="0" class="form-control small">
+              </div>
+              <div class="form-group" id="bar-label-currency-group" style="display:none;">
+                <label for="bar-label-currency-symbol">Currency Symbol</label>
+                <input type="text" id="bar-label-currency-symbol" value="$" class="form-control small" maxlength="5" style="width:60px;">
+              </div>
             </div>
             <div class="form-row">
               <div class="form-group">
@@ -883,14 +940,22 @@
               <select id="line-label-format" class="form-control">
                 <option value="auto">Auto (Tableau)</option>
                 <option value="number">Number (1,234)</option>
-                <option value="number2">Number - 2 decimals (1,234.56)</option>
                 <option value="currency">Currency ($1,234)</option>
-                <option value="currency2">Currency - 2 decimals ($1,234.56)</option>
                 <option value="percent">Percent (12%)</option>
-                <option value="percent2">Percent - 2 decimals (12.34%)</option>
                 <option value="compact">Compact (1.2K)</option>
                 <option value="scientific">Scientific (1.23e+3)</option>
+                <option value="custom">Custom...</option>
               </select>
+            </div>
+            <div class="form-row" id="line-label-format-options" style="display:none;">
+              <div class="form-group">
+                <label for="line-label-decimals">Decimal Places</label>
+                <input type="number" id="line-label-decimals" min="0" max="6" value="0" class="form-control small">
+              </div>
+              <div class="form-group" id="line-label-currency-group" style="display:none;">
+                <label for="line-label-currency-symbol">Currency Symbol</label>
+                <input type="text" id="line-label-currency-symbol" value="$" class="form-control small" maxlength="5" style="width:60px;">
+              </div>
             </div>
             <div class="form-row">
               <div class="form-group">
