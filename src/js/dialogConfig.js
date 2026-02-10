@@ -1,0 +1,1955 @@
+/**
+ * Dialog Configuration Handler for Viz Extension
+ * Manages the configuration dialog UI and settings
+ */
+
+(function() {
+  'use strict';
+
+  // Configuration object
+  let config = {};
+  let worksheet = null;
+  let columns = { dimensions: [], measures: [] };
+
+  // DOM Elements cache
+  const elements = {};
+
+  /**
+   * Initialize dialog
+   */
+  async function init() {
+    try {
+      // Initialize Tableau Extensions API
+      await tableau.extensions.initializeDialogAsync();
+
+      // Get the worksheet from viz extension context
+      worksheet = tableau.extensions.worksheetContent.worksheet;
+
+      // Load existing configuration
+      loadConfig();
+
+      // Cache DOM elements
+      cacheElements();
+
+      // Load columns from the worksheet
+      await loadColumns();
+
+      // Set up tab navigation FIRST (critical for UI)
+      setupTabs();
+
+      // Populate form with current values
+      populateForm();
+
+      // Set up event listeners (wrapped in try-catch to not block tabs)
+      try {
+        setupEventListeners();
+      } catch (eventError) {
+        console.error('Error setting up event listeners:', eventError);
+      }
+
+      // Check if we should open a specific tab (from context menu)
+      navigateToRequestedTab();
+
+    } catch (error) {
+      console.error('Dialog initialization error:', error);
+    }
+  }
+
+  /**
+   * Navigate to a specific tab if requested (e.g., from context menu)
+   */
+  function navigateToRequestedTab() {
+    const settings = tableau.extensions.settings.getAll();
+    const requestedTab = settings.dialogOpenTab;
+    const requestedSection = settings.dialogOpenSection;
+
+    // Clear the settings so they don't persist
+    tableau.extensions.settings.erase('dialogOpenTab');
+    tableau.extensions.settings.erase('dialogOpenSection');
+
+    if (requestedTab) {
+      // Find and click the appropriate tab button
+      const tabBtn = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
+      if (tabBtn) {
+        tabBtn.click();
+
+        // If a specific section was requested, scroll to it
+        if (requestedSection) {
+          setTimeout(() => {
+            scrollToSection(requestedSection);
+          }, 100);
+        }
+      }
+    }
+  }
+
+  /**
+   * Scroll to a specific section within the current tab
+   */
+  function scrollToSection(sectionId) {
+    const sectionMap = {
+      'bar1': '#tab-bars .config-section:nth-child(2)',
+      'bar2': '#tab-bars .config-section:nth-child(3)',
+      'line': '#tab-line .config-section:first-child',
+      'xAxis': '#tab-axes .config-section:nth-child(2)',
+      'yAxisLeft': '#tab-axes .config-section:nth-child(3)',
+      'yAxisRight': '#tab-axes .config-section:nth-child(4)',
+      'grid': '#tab-axes .config-section:nth-child(5)',
+      'title': '#tab-labels .config-section:first-child',
+      'legend': '#tab-labels .config-section:nth-child(4)'
+    };
+
+    const selector = sectionMap[sectionId];
+    if (selector) {
+      const section = document.querySelector(selector);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Add highlight effect
+        section.classList.add('highlight-section');
+        setTimeout(() => section.classList.remove('highlight-section'), 2000);
+      }
+    }
+  }
+
+  /**
+   * Load configuration from settings
+   */
+  function loadConfig() {
+    const settings = tableau.extensions.settings.getAll();
+    if (settings.comboChartConfig) {
+      config = JSON.parse(settings.comboChartConfig);
+    } else {
+      // Use defaults
+      config = getDefaultConfig();
+    }
+  }
+
+  /**
+   * Get default configuration
+   */
+  function getDefaultConfig() {
+    const defaultFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    return {
+      dimension: '',
+      bar1Measure: '',
+      bar2Measure: '',
+      lineMeasure: '',
+      colorPalette: 'tableau10',
+      barStyle: 'grouped',
+      barPadding: 0.2,
+      bar1: { color: '#4e79a7', opacity: 1, borderColor: '#3a5f80', borderWidth: 1, cornerRadius: 2 },
+      bar2: { color: '#f28e2c', opacity: 1, borderColor: '#c47223', borderWidth: 1, cornerRadius: 2 },
+      line: { color: '#e15759', opacity: 1, width: 2, style: 'solid', curve: 'linear' },
+      points: { show: true, size: 5, shape: 'circle', fill: '#e15759', stroke: '#ffffff' },
+      animation: { enabled: true, duration: 500, easing: 'easeCubicOut' },
+      font: { family: defaultFont, titleWeight: 600, labelWeight: 400 },
+      axisMode: 'dual',
+      xAxis: { show: true, title: '', fontSize: 12, rotation: 0 },
+      yAxisLeft: { show: true, title: '', min: null, max: null, format: 'auto' },
+      yAxisRight: { show: true, title: '', min: null, max: null, format: 'auto' },
+      grid: { horizontal: true, vertical: false, color: '#e0e0e0', opacity: 0.5 },
+      title: { show: true, text: 'Combo Chart', fontSize: 18, color: '#333333' },
+      barLabels: { show: false, position: 'top', fontSize: 10, color: '#333333' },
+      lineLabels: { show: false, position: 'top', fontSize: 10, color: '#333333' },
+      legend: { show: true, position: 'bottom', bar1Label: '', bar2Label: '', lineLabel: '' },
+      tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, bgColor: '#333333', textColor: '#ffffff', fontSize: 12 },
+      headerControls: { showLegendToggle: true, showSettingsCog: true },
+      titleFont: { family: defaultFont, size: 18, weight: 600, color: '#333333', italic: false },
+      xAxisFont: { family: defaultFont, size: 12, weight: 400, color: '#666666', italic: false },
+      yAxisFont: { family: defaultFont, size: 12, weight: 400, color: '#666666', italic: false },
+      legendFont: { family: defaultFont, size: 12, weight: 400, color: '#333333', italic: false },
+      barLabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
+      lineLabelFont: { family: defaultFont, size: 10, weight: 400, color: '#333333', italic: false },
+      tooltipFont: { family: defaultFont, size: 12, weight: 400, color: '#ffffff', italic: false }
+    };
+  }
+
+  /**
+   * Color palettes (Tableau-style)
+   */
+  const colorPalettes = {
+    'tableau10': {
+      name: 'Tableau 10',
+      colors: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab']
+    },
+    'tableau20': {
+      name: 'Tableau 20',
+      colors: ['#4e79a7', '#a0cbe8', '#f28e2c', '#ffbe7d', '#59a14f', '#8cd17d', '#b6992d', '#f1ce63', '#499894', '#86bcb6']
+    },
+    'colorBlind': {
+      name: 'Color Blind Safe',
+      colors: ['#1170aa', '#fc7d0b', '#a3acb9', '#57606c', '#5fa2ce', '#c85200', '#7b848f', '#a3cce9', '#ffbc79', '#c8d0d9']
+    },
+    'seattle': {
+      name: 'Seattle Grays',
+      colors: ['#767f8b', '#b3b7b8', '#5c6068', '#9ea4ac', '#d7d8d9', '#3b3f45', '#8a8f96', '#c6c9cc', '#454a51', '#babdbf']
+    },
+    'trafficLight': {
+      name: 'Traffic Light',
+      colors: ['#b10318', '#dba13a', '#309343', '#d82526', '#ffc156', '#69b764', '#f26c64', '#ffdd71', '#a5d99f']
+    },
+    'purpleGray': {
+      name: 'Purple-Gray',
+      colors: ['#7b66d2', '#a699e8', '#dc5fbd', '#ffc0da', '#5f5a41', '#b4b19b', '#995688', '#d898ba', '#ab6ad5', '#d098ee']
+    },
+    'greenOrange': {
+      name: 'Green-Orange',
+      colors: ['#32a251', '#acd98d', '#ff7f0f', '#ffb977', '#3cb7cc', '#98d9e4', '#b85a0d', '#ffd94a', '#39737c', '#86b4a9']
+    },
+    'blueRed': {
+      name: 'Blue-Red',
+      colors: ['#2c69b0', '#b5c8e2', '#f02720', '#ffb6b0', '#ac613c', '#e9c39b', '#6ba3d6', '#b5dffd', '#ac8763', '#ddc9b4']
+    },
+    'cyclic': {
+      name: 'Cyclic',
+      colors: ['#1f83b4', '#12a2a8', '#2ca030', '#78a641', '#bcbd22', '#ffbf50', '#ffaa0e', '#ff7f0e', '#d63a3a', '#c7519c']
+    },
+    'classic': {
+      name: 'Classic',
+      colors: ['#7ab800', '#6ac7de', '#ff6f01', '#fbb034', '#68adef', '#6d6e70', '#a4dbcc', '#ffbf9a', '#b3d9ff', '#d0d0d0']
+    }
+  };
+
+  /**
+   * Cache DOM elements
+   */
+  function cacheElements() {
+    // Data tab - no worksheet select needed for viz extensions
+    elements.dimensionSelect = document.getElementById('dimension-select');
+    elements.bar1Measure = document.getElementById('bar1-measure');
+    elements.bar2Measure = document.getElementById('bar2-measure');
+    elements.lineMeasure = document.getElementById('line-measure');
+
+    // Bars tab
+    elements.barPadding = document.getElementById('bar-padding');
+    elements.barPaddingValue = document.getElementById('bar-padding-value');
+    elements.bar1Color = document.getElementById('bar1-color');
+    elements.bar1Opacity = document.getElementById('bar1-opacity');
+    elements.bar1OpacityValue = document.getElementById('bar1-opacity-value');
+    elements.bar1BorderColor = document.getElementById('bar1-border-color');
+    elements.bar1BorderWidth = document.getElementById('bar1-border-width');
+    elements.bar1CornerRadius = document.getElementById('bar1-corner-radius');
+    elements.bar1CornerRadiusValue = document.getElementById('bar1-corner-radius-value');
+    elements.bar1ShowBorder = document.getElementById('bar1-show-border');
+    elements.bar1BorderOptions = document.getElementById('bar1-border-options');
+    elements.bar2Color = document.getElementById('bar2-color');
+    elements.bar2Opacity = document.getElementById('bar2-opacity');
+    elements.bar2OpacityValue = document.getElementById('bar2-opacity-value');
+    elements.bar2BorderColor = document.getElementById('bar2-border-color');
+    elements.bar2BorderWidth = document.getElementById('bar2-border-width');
+    elements.bar2CornerRadius = document.getElementById('bar2-corner-radius');
+    elements.bar2CornerRadiusValue = document.getElementById('bar2-corner-radius-value');
+    elements.bar2ShowBorder = document.getElementById('bar2-show-border');
+    elements.bar2BorderOptions = document.getElementById('bar2-border-options');
+    elements.swapBarsBtn = document.getElementById('swap-bars-btn');
+
+    // Line tab
+    elements.lineColor = document.getElementById('line-color');
+    elements.lineOpacity = document.getElementById('line-opacity');
+    elements.lineOpacityValue = document.getElementById('line-opacity-value');
+    elements.lineWidth = document.getElementById('line-width');
+    elements.lineStyle = document.getElementById('line-style');
+    elements.lineCurve = document.getElementById('line-curve');
+    elements.showPoints = document.getElementById('show-points');
+    elements.pointSize = document.getElementById('point-size');
+    elements.pointShape = document.getElementById('point-shape');
+    elements.pointFill = document.getElementById('point-fill');
+    elements.pointStroke = document.getElementById('point-stroke');
+
+    // Axes tab
+    elements.syncDualAxis = document.getElementById('sync-dual-axis');
+    elements.syncAxisOption = document.getElementById('sync-axis-option');
+    elements.xAxisShow = document.getElementById('x-axis-show');
+    elements.xAxisTitle = document.getElementById('x-axis-title');
+    elements.xAxisFontSize = document.getElementById('x-axis-font-size');
+    elements.xAxisRotation = document.getElementById('x-axis-rotation');
+    elements.yAxisLeftShow = document.getElementById('y-axis-left-show');
+    elements.yAxisLeftTitle = document.getElementById('y-axis-left-title');
+    elements.yAxisLeftMin = document.getElementById('y-axis-left-min');
+    elements.yAxisLeftMax = document.getElementById('y-axis-left-max');
+    elements.yAxisLeftFormat = document.getElementById('y-axis-left-format');
+    elements.yAxisRightShow = document.getElementById('y-axis-right-show');
+    elements.yAxisRightTitle = document.getElementById('y-axis-right-title');
+    elements.yAxisRightMin = document.getElementById('y-axis-right-min');
+    elements.yAxisRightMax = document.getElementById('y-axis-right-max');
+    elements.yAxisRightFormat = document.getElementById('y-axis-right-format');
+    elements.gridHorizontal = document.getElementById('grid-horizontal');
+    elements.gridVertical = document.getElementById('grid-vertical');
+    elements.gridColor = document.getElementById('grid-color');
+    elements.gridOpacity = document.getElementById('grid-opacity');
+    elements.gridOpacityValue = document.getElementById('grid-opacity-value');
+
+    // Labels tab
+    elements.showTitle = document.getElementById('show-title');
+    elements.chartTitle = document.getElementById('chart-title');
+    elements.titleFontSize = document.getElementById('title-font-size');
+    elements.titleColor = document.getElementById('title-color');
+    elements.showBarLabels = document.getElementById('show-bar-labels');
+    elements.barLabelPosition = document.getElementById('bar-label-position');
+    elements.barLabelFontSize = document.getElementById('bar-label-font-size');
+    elements.barLabelColor = document.getElementById('bar-label-color');
+    elements.showLineLabels = document.getElementById('show-line-labels');
+    elements.lineLabelPosition = document.getElementById('line-label-position');
+    elements.lineLabelFontSize = document.getElementById('line-label-font-size');
+    elements.lineLabelColor = document.getElementById('line-label-color');
+    elements.showLegend = document.getElementById('show-legend');
+    elements.legendPosition = document.getElementById('legend-position');
+    elements.legendBar1Label = document.getElementById('legend-bar1-label');
+    elements.legendBar2Label = document.getElementById('legend-bar2-label');
+    elements.legendLineLabel = document.getElementById('legend-line-label');
+
+    // Tooltip tab
+    elements.showTooltip = document.getElementById('show-tooltip');
+    elements.tooltipShowDimension = document.getElementById('tooltip-show-dimension');
+    elements.tooltipShowMeasureName = document.getElementById('tooltip-show-measure-name');
+    elements.tooltipShowValue = document.getElementById('tooltip-show-value');
+    elements.tooltipBgColor = document.getElementById('tooltip-bg-color');
+    elements.tooltipTextColor = document.getElementById('tooltip-text-color');
+    elements.tooltipFontSize = document.getElementById('tooltip-font-size');
+    elements.tooltipFontFamily = document.getElementById('tooltip-font-family');
+    elements.tooltipFontWeight = document.getElementById('tooltip-font-weight');
+
+    // Dashboard controls
+    elements.showLegendToggle = document.getElementById('show-legend-toggle');
+    elements.showSettingsCog = document.getElementById('show-settings-cog');
+
+    // Individual font settings
+    elements.titleFontFamily = document.getElementById('title-font-family');
+    elements.titleFontWeight = document.getElementById('title-font-weight');
+    elements.titleItalic = document.getElementById('title-italic');
+    elements.xAxisFontFamily = document.getElementById('x-axis-font-family');
+    elements.xAxisFontWeight = document.getElementById('x-axis-font-weight');
+    elements.xAxisFontColor = document.getElementById('x-axis-font-color');
+    elements.yAxisFontFamily = document.getElementById('y-axis-font-family');
+    elements.yAxisFontSize = document.getElementById('y-axis-font-size');
+    elements.yAxisFontWeight = document.getElementById('y-axis-font-weight');
+    elements.yAxisFontColor = document.getElementById('y-axis-font-color');
+    elements.legendFontFamily = document.getElementById('legend-font-family');
+    elements.legendFontSize = document.getElementById('legend-font-size');
+    elements.legendFontWeight = document.getElementById('legend-font-weight');
+    elements.legendFontColor = document.getElementById('legend-font-color');
+    elements.legendItalic = document.getElementById('legend-italic');
+    elements.legendBgColor = document.getElementById('legend-bg-color');
+    elements.legendBgTransparent = document.getElementById('legend-bg-transparent');
+
+    // Title background
+    elements.titleBgColor = document.getElementById('title-bg-color');
+    elements.titleBgTransparent = document.getElementById('title-bg-transparent');
+
+    // X-Axis visibility toggles
+    elements.xAxisShowTitle = document.getElementById('x-axis-show-title');
+    elements.xAxisShowLabels = document.getElementById('x-axis-show-labels');
+    elements.xAxisShowTicks = document.getElementById('x-axis-show-ticks');
+    elements.xAxisShowLine = document.getElementById('x-axis-show-line');
+    elements.xAxisLineColor = document.getElementById('x-axis-line-color');
+    elements.xAxisAlign = document.getElementById('x-axis-align');
+    elements.xAxisSort = document.getElementById('x-axis-sort');
+    elements.xAxisMaxWidth = document.getElementById('x-axis-max-width');
+
+    // Y-Axis Left visibility toggles
+    elements.yAxisLeftShowTitle = document.getElementById('y-axis-left-show-title');
+    elements.yAxisLeftShowLabels = document.getElementById('y-axis-left-show-labels');
+    elements.yAxisLeftShowTicks = document.getElementById('y-axis-left-show-ticks');
+    elements.yAxisLeftShowLine = document.getElementById('y-axis-left-show-line');
+    elements.yAxisLineColor = document.getElementById('y-axis-line-color');
+
+    // Y-Axis Right visibility toggles
+    elements.yAxisRightShowTitle = document.getElementById('y-axis-right-show-title');
+    elements.yAxisRightShowLabels = document.getElementById('y-axis-right-show-labels');
+    elements.yAxisRightShowTicks = document.getElementById('y-axis-right-show-ticks');
+    elements.yAxisRightShowLine = document.getElementById('y-axis-right-show-line');
+
+    // Bar 1 label font
+    elements.bar1LabelFontFamily = document.getElementById('bar1-label-font-family');
+    elements.bar1LabelFontSize = document.getElementById('bar1-label-font-size');
+    elements.bar1LabelFontWeight = document.getElementById('bar1-label-font-weight');
+    elements.bar1LabelColor = document.getElementById('bar1-label-color');
+    elements.bar1LabelItalic = document.getElementById('bar1-label-italic');
+
+    // Bar 2 label font
+    elements.bar2LabelFontFamily = document.getElementById('bar2-label-font-family');
+    elements.bar2LabelFontSize = document.getElementById('bar2-label-font-size');
+    elements.bar2LabelFontWeight = document.getElementById('bar2-label-font-weight');
+    elements.bar2LabelColor = document.getElementById('bar2-label-color');
+    elements.bar2LabelItalic = document.getElementById('bar2-label-italic');
+
+    // Legacy bar label (kept for compatibility)
+    elements.barLabelFontFamily = document.getElementById('bar-label-font-family');
+    elements.barLabelFontWeight = document.getElementById('bar-label-font-weight');
+    elements.barLabelItalic = document.getElementById('bar-label-italic');
+    elements.barLabelOffsetX = document.getElementById('bar-label-offset-x');
+    elements.barLabelOffsetY = document.getElementById('bar-label-offset-y');
+    elements.lineLabelFontFamily = document.getElementById('line-label-font-family');
+    elements.lineLabelFontWeight = document.getElementById('line-label-font-weight');
+    elements.lineLabelItalic = document.getElementById('line-label-italic');
+    elements.lineLabelOffsetX = document.getElementById('line-label-offset-x');
+    elements.lineLabelOffsetY = document.getElementById('line-label-offset-y');
+
+    // Theme tab - Animation
+    elements.animationEnabled = document.getElementById('animation-enabled');
+    elements.animationDuration = document.getElementById('animation-duration');
+    elements.animationDurationValue = document.getElementById('animation-duration-value');
+    elements.animationEasing = document.getElementById('animation-easing');
+    elements.animationOptions = document.getElementById('animation-options');
+    elements.previewAnimation = document.getElementById('preview-animation');
+
+    // Dialog appearance
+    elements.showSectionDividers = document.getElementById('show-section-dividers');
+    elements.compactMode = document.getElementById('compact-mode');
+
+    // Theme tab - Typography
+    elements.fontFamily = document.getElementById('font-family');
+    elements.titleWeight = document.getElementById('title-weight');
+    elements.labelWeight = document.getElementById('label-weight');
+    elements.fontPreview = document.getElementById('font-preview');
+
+    // Buttons
+    elements.cancelBtn = document.getElementById('cancel-btn');
+    elements.applyBtn = document.getElementById('apply-btn');
+    elements.saveBtn = document.getElementById('save-btn');
+    elements.resetBtn = document.getElementById('reset-btn');
+
+    // Hide worksheet selection section for viz extensions
+    const worksheetSection = document.querySelector('#tab-data .config-section:first-child');
+    if (worksheetSection) {
+      worksheetSection.style.display = 'none';
+    }
+
+    // Initialize color palettes UI
+    initColorPalettes();
+
+    // Initialize font select dropdowns
+    initFontSelects();
+  }
+
+  /**
+   * Font families list with primary font name shown
+   */
+  const fontFamilies = [
+    { value: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", label: 'System UI', primary: 'system-ui' },
+    { value: "'Segoe UI', Tahoma, Geneva, sans-serif", label: 'Segoe UI', primary: 'Segoe UI' },
+    { value: 'Arial, Helvetica, sans-serif', label: 'Arial', primary: 'Arial' },
+    { value: "'Helvetica Neue', Helvetica, Arial, sans-serif", label: 'Helvetica Neue', primary: 'Helvetica Neue' },
+    { value: "Roboto, 'Helvetica Neue', sans-serif", label: 'Roboto', primary: 'Roboto' },
+    { value: "'Open Sans', sans-serif", label: 'Open Sans', primary: 'Open Sans' },
+    { value: "'Source Sans Pro', sans-serif", label: 'Source Sans Pro', primary: 'Source Sans Pro' },
+    { value: 'Lato, sans-serif', label: 'Lato', primary: 'Lato' },
+    { value: "'Inter', sans-serif", label: 'Inter', primary: 'Inter' },
+    { value: "'Tableau Book', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Book', primary: 'Tableau Book' },
+    { value: "Georgia, 'Times New Roman', serif", label: 'Georgia', primary: 'Georgia' },
+    { value: "'Times New Roman', Times, serif", label: 'Times New Roman', primary: 'Times New Roman' },
+    { value: "Verdana, Geneva, sans-serif", label: 'Verdana', primary: 'Verdana' },
+    { value: "Tahoma, Geneva, sans-serif", label: 'Tahoma', primary: 'Tahoma' },
+    { value: "Trebuchet MS, sans-serif", label: 'Trebuchet MS', primary: 'Trebuchet MS' },
+    { value: "'Courier New', Courier, monospace", label: 'Courier New', primary: 'Courier New' },
+    { value: "'SF Mono', 'Consolas', 'Monaco', monospace", label: 'SF Mono / Consolas', primary: 'SF Mono' }
+  ];
+
+  /**
+   * Check if a font is available on the system
+   */
+  function isFontAvailable(fontName) {
+    if (!document.fonts || !document.fonts.check) {
+      return true; // Assume available if API not supported
+    }
+    try {
+      return document.fonts.check(`12px "${fontName}"`);
+    } catch (e) {
+      return true; // Assume available on error
+    }
+  }
+
+  /**
+   * Detect system font preferences
+   * Note: Tableau Extensions API doesn't expose workbook font settings directly,
+   * so we use common defaults based on the platform
+   */
+  function detectSystemFont() {
+    // Try to detect the platform
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const isWindows = navigator.platform.toUpperCase().indexOf('WIN') >= 0;
+
+    if (isMac) {
+      return {
+        family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif",
+        label: 'SF Pro (macOS)'
+      };
+    } else if (isWindows) {
+      return {
+        family: "'Segoe UI', Tahoma, Geneva, sans-serif",
+        label: 'Segoe UI (Windows)'
+      };
+    }
+    return {
+      family: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      label: 'System UI'
+    };
+  }
+
+  /**
+   * Initialize font select dropdowns with availability check
+   */
+  function initFontSelects() {
+    const fontSelects = document.querySelectorAll('.font-select');
+    const systemFont = detectSystemFont();
+
+    fontSelects.forEach(select => {
+      select.innerHTML = '';
+
+      // Add detected system font as first option
+      const systemOption = document.createElement('option');
+      systemOption.value = systemFont.family;
+      systemOption.textContent = systemFont.label + ' (Recommended)';
+      systemOption.style.fontFamily = systemFont.family;
+      select.appendChild(systemOption);
+
+      // Add separator
+      const separator = document.createElement('option');
+      separator.disabled = true;
+      separator.textContent = '─────────────';
+      select.appendChild(separator);
+
+      fontFamilies.forEach(font => {
+        const option = document.createElement('option');
+        option.value = font.value;
+        option.style.fontFamily = font.value;
+
+        // Check if primary font is available
+        const isAvailable = isFontAvailable(font.primary);
+        option.textContent = font.label + (isAvailable ? '' : ' (fallback)');
+
+        select.appendChild(option);
+      });
+    });
+  }
+
+  /**
+   * Initialize color palettes UI
+   */
+  function initColorPalettes() {
+    const container = document.getElementById('color-palettes');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    for (const [id, palette] of Object.entries(colorPalettes)) {
+      const option = document.createElement('div');
+      option.className = 'palette-option' + (config.colorPalette === id ? ' active' : '');
+      option.dataset.palette = id;
+
+      const name = document.createElement('div');
+      name.className = 'palette-name';
+      name.textContent = palette.name;
+
+      const colors = document.createElement('div');
+      colors.className = 'palette-colors';
+
+      // Show first 6 colors as preview
+      palette.colors.slice(0, 6).forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'palette-color';
+        swatch.style.backgroundColor = color;
+        colors.appendChild(swatch);
+      });
+
+      option.appendChild(name);
+      option.appendChild(colors);
+
+      option.addEventListener('click', () => selectPalette(id));
+      container.appendChild(option);
+    }
+  }
+
+  /**
+   * Select a color palette
+   */
+  function selectPalette(paletteId) {
+    const palette = colorPalettes[paletteId];
+    if (!palette) return;
+
+    config.colorPalette = paletteId;
+
+    // Apply colors to config
+    if (palette.colors.length >= 3) {
+      config.bar1.color = palette.colors[0];
+      config.bar2.color = palette.colors[1];
+      config.line.color = palette.colors[2];
+      config.points.fill = palette.colors[2];
+      config.bar1.borderColor = darkenColor(palette.colors[0], 20);
+      config.bar2.borderColor = darkenColor(palette.colors[1], 20);
+
+      // Update color inputs
+      elements.bar1Color.value = config.bar1.color;
+      elements.bar1BorderColor.value = config.bar1.borderColor;
+      elements.bar2Color.value = config.bar2.color;
+      elements.bar2BorderColor.value = config.bar2.borderColor;
+      elements.lineColor.value = config.line.color;
+      elements.pointFill.value = config.points.fill;
+    }
+
+    // Update active state
+    document.querySelectorAll('.palette-option').forEach(el => {
+      el.classList.toggle('active', el.dataset.palette === paletteId);
+    });
+  }
+
+  /**
+   * Darken a hex color
+   */
+  function darkenColor(hex, percent) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.max(0, (num >> 16) - amt);
+    const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+    const B = Math.max(0, (num & 0x0000FF) - amt);
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+  }
+
+  /**
+   * Load columns from the worksheet
+   */
+  async function loadColumns() {
+    if (!worksheet) {
+      console.error('Worksheet not available');
+      return;
+    }
+
+    try {
+      const dataTable = await worksheet.getSummaryDataAsync();
+      const cols = dataTable.columns;
+
+      columns = { dimensions: [], measures: [] };
+
+      cols.forEach(col => {
+        if (col.dataType === 'string' || col.dataType === 'date' || col.dataType === 'date-time') {
+          columns.dimensions.push({ fieldName: col.fieldName, dataType: col.dataType });
+        } else {
+          columns.measures.push({ fieldName: col.fieldName, dataType: col.dataType });
+        }
+      });
+
+      populateFieldSelects();
+    } catch (error) {
+      console.error('Error loading columns:', error);
+    }
+  }
+
+  /**
+   * Populate field select dropdowns
+   */
+  function populateFieldSelects() {
+    // Dimension select
+    elements.dimensionSelect.innerHTML = '<option value="">-- Select Dimension --</option>';
+    columns.dimensions.forEach(dim => {
+      const option = document.createElement('option');
+      option.value = dim.fieldName;
+      option.textContent = dim.fieldName;
+      elements.dimensionSelect.appendChild(option);
+    });
+
+    // Measure selects
+    const measureSelects = [elements.bar1Measure, elements.bar2Measure, elements.lineMeasure];
+    measureSelects.forEach(select => {
+      select.innerHTML = '<option value="">-- Select Measure --</option>';
+      columns.measures.forEach(measure => {
+        const option = document.createElement('option');
+        option.value = measure.fieldName;
+        option.textContent = measure.fieldName;
+        select.appendChild(option);
+      });
+    });
+
+    // Set current values
+    if (config.dimension) elements.dimensionSelect.value = config.dimension;
+    if (config.bar1Measure) elements.bar1Measure.value = config.bar1Measure;
+    if (config.bar2Measure) elements.bar2Measure.value = config.bar2Measure;
+    if (config.lineMeasure) elements.lineMeasure.value = config.lineMeasure;
+
+    // Update section headers with field names
+    updateFieldLabels();
+  }
+
+  /**
+   * Update section headers and labels to show selected field names
+   */
+  function updateFieldLabels() {
+    // Helper to clean measure names (remove AGG prefixes)
+    const cleanName = (name) => {
+      if (!name) return '';
+      return name.replace(/^(SUM|AVG|MIN|MAX|COUNT|AGG|MEDIAN|STDEV|VAR)\((.+)\)$/i, '$2').trim();
+    };
+
+    const bar1Name = cleanName(config.bar1Measure);
+    const bar2Name = cleanName(config.bar2Measure);
+    const lineName = cleanName(config.lineMeasure);
+
+    // Update Bar 1 section header (Bars tab)
+    const bar1Header = document.querySelector('#tab-bars .config-section:nth-child(2) h3');
+    if (bar1Header) {
+      bar1Header.innerHTML = bar1Name ? `Bar 1 Style <span class="field-badge">${bar1Name}</span>` : 'Bar 1 Style';
+    }
+
+    // Update Bar 2 section header (Bars tab)
+    const bar2Header = document.querySelector('#tab-bars .config-section:nth-child(3) h3');
+    if (bar2Header) {
+      bar2Header.innerHTML = bar2Name ? `Bar 2 Style <span class="field-badge">${bar2Name}</span>` : 'Bar 2 Style';
+    }
+
+    // Update Line section header (Line tab)
+    const lineHeader = document.querySelector('#tab-line .config-section:first-child h3');
+    if (lineHeader) {
+      lineHeader.innerHTML = lineName ? `Line Style <span class="field-badge">${lineName}</span>` : 'Line Style';
+    }
+
+    // Update measure select labels (Data tab)
+    const bar1Label = document.querySelector('label[for="bar1-measure"]');
+    if (bar1Label) {
+      bar1Label.innerHTML = bar1Name ? `Bar 1 Measure <span class="field-indicator">(${bar1Name})</span>` : 'Bar 1 Measure';
+    }
+
+    const bar2Label = document.querySelector('label[for="bar2-measure"]');
+    if (bar2Label) {
+      bar2Label.innerHTML = bar2Name ? `Bar 2 Measure <span class="field-indicator">(${bar2Name})</span>` : 'Bar 2 Measure';
+    }
+
+    const lineLabel = document.querySelector('label[for="line-measure"]');
+    if (lineLabel) {
+      lineLabel.innerHTML = lineName ? `Line Measure <span class="field-indicator">(${lineName})</span>` : 'Line Measure';
+    }
+
+    // Update Bar 1 Labels subsection header (Labels tab)
+    const bar1LabelSubheader = document.querySelector('#bar-labels-options .subsection-header:first-of-type .subsection-title');
+    if (bar1LabelSubheader) {
+      bar1LabelSubheader.innerHTML = bar1Name ? `Bar 1 Labels <span class="field-badge-small">${bar1Name}</span>` : 'Bar 1 Labels';
+    }
+
+    // Update Bar 2 Labels subsection header (Labels tab)
+    const bar2LabelSubheader = document.querySelector('#bar-labels-options .subsection-header:nth-of-type(2) .subsection-title');
+    if (bar2LabelSubheader) {
+      bar2LabelSubheader.innerHTML = bar2Name ? `Bar 2 Labels <span class="field-badge-small">${bar2Name}</span>` : 'Bar 2 Labels';
+    }
+
+    // Update Legend custom labels section
+    const legendBar1Label = document.querySelector('label[for="legend-bar1-label"]');
+    if (legendBar1Label) {
+      legendBar1Label.innerHTML = bar1Name ? `Bar 1 Label <span class="field-indicator">(${bar1Name})</span>` : 'Bar 1 Label';
+    }
+
+    const legendBar2Label = document.querySelector('label[for="legend-bar2-label"]');
+    if (legendBar2Label) {
+      legendBar2Label.innerHTML = bar2Name ? `Bar 2 Label <span class="field-indicator">(${bar2Name})</span>` : 'Bar 2 Label';
+    }
+
+    const legendLineLabel = document.querySelector('label[for="legend-line-label"]');
+    if (legendLineLabel) {
+      legendLineLabel.innerHTML = lineName ? `Line Label <span class="field-indicator">(${lineName})</span>` : 'Line Label';
+    }
+
+    // Update Y-Axis Left title (shows bar field names)
+    const yAxisLeftHeader = document.querySelector('#tab-axes .config-section:nth-child(3) h3');
+    if (yAxisLeftHeader) {
+      const barFields = [bar1Name, bar2Name].filter(Boolean).join(' / ');
+      yAxisLeftHeader.innerHTML = barFields ? `Left Y-Axis (Bars) <span class="field-badge">${barFields}</span>` : 'Left Y-Axis (Bars)';
+    }
+
+    // Update Y-Axis Right title (shows line field name)
+    const yAxisRightHeader = document.querySelector('#y-axis-right-section h3');
+    if (yAxisRightHeader) {
+      yAxisRightHeader.innerHTML = lineName ? `Right Y-Axis (Line) <span class="field-badge">${lineName}</span>` : 'Right Y-Axis (Line)';
+    }
+  }
+
+  /**
+   * Populate form with current configuration
+   */
+  function populateForm() {
+    // Bar style radio
+    const barStyleRadio = document.querySelector(`input[name="bar-style"][value="${config.barStyle}"]`);
+    if (barStyleRadio) barStyleRadio.checked = true;
+
+    // Bar padding
+    elements.barPadding.value = config.barPadding;
+    elements.barPaddingValue.textContent = config.barPadding;
+
+    // Bar 1 settings
+    elements.bar1Color.value = config.bar1.color;
+    elements.bar1Opacity.value = config.bar1.opacity;
+    elements.bar1OpacityValue.textContent = config.bar1.opacity;
+    if (elements.bar1ShowBorder) elements.bar1ShowBorder.checked = config.bar1.showBorder !== false;
+    elements.bar1BorderColor.value = config.bar1.borderColor;
+    elements.bar1BorderWidth.value = config.bar1.borderWidth;
+    elements.bar1CornerRadius.value = config.bar1.cornerRadius;
+    elements.bar1CornerRadiusValue.textContent = config.bar1.cornerRadius;
+    updateBar1BorderVisibility();
+
+    // Bar 2 settings
+    elements.bar2Color.value = config.bar2.color;
+    elements.bar2Opacity.value = config.bar2.opacity;
+    elements.bar2OpacityValue.textContent = config.bar2.opacity;
+    if (elements.bar2ShowBorder) elements.bar2ShowBorder.checked = config.bar2.showBorder !== false;
+    elements.bar2BorderColor.value = config.bar2.borderColor;
+    elements.bar2BorderWidth.value = config.bar2.borderWidth;
+    elements.bar2CornerRadius.value = config.bar2.cornerRadius;
+    elements.bar2CornerRadiusValue.textContent = config.bar2.cornerRadius;
+    updateBar2BorderVisibility();
+
+    // Line settings
+    elements.lineColor.value = config.line.color;
+    elements.lineOpacity.value = config.line.opacity;
+    elements.lineOpacityValue.textContent = config.line.opacity;
+    elements.lineWidth.value = config.line.width;
+    elements.lineStyle.value = config.line.style;
+    elements.lineCurve.value = config.line.curve;
+
+    // Points settings
+    elements.showPoints.checked = config.points.show;
+    elements.pointSize.value = config.points.size;
+    elements.pointShape.value = config.points.shape;
+    elements.pointFill.value = config.points.fill;
+    elements.pointStroke.value = config.points.stroke;
+
+    // Axis mode radio
+    const axisModeRadio = document.querySelector(`input[name="axis-mode"][value="${config.axisMode}"]`);
+    if (axisModeRadio) axisModeRadio.checked = true;
+
+    // Sync dual axis
+    if (elements.syncDualAxis) {
+      elements.syncDualAxis.checked = config.syncDualAxis === true;
+    }
+    updateSyncAxisVisibility();
+
+    // X-axis settings
+    elements.xAxisShow.checked = config.xAxis.show;
+    elements.xAxisTitle.value = config.xAxis.title;
+    elements.xAxisFontSize.value = config.xAxis.fontSize;
+    elements.xAxisRotation.value = config.xAxis.rotation;
+    if (elements.xAxisShowTitle) elements.xAxisShowTitle.checked = config.xAxis.showTitle !== false;
+    if (elements.xAxisShowLabels) elements.xAxisShowLabels.checked = config.xAxis.showLabels !== false;
+    if (elements.xAxisShowTicks) elements.xAxisShowTicks.checked = config.xAxis.showTickMarks !== false;
+    if (elements.xAxisShowLine) elements.xAxisShowLine.checked = config.xAxis.showAxisLine !== false;
+    if (elements.xAxisLineColor) elements.xAxisLineColor.value = config.xAxis.lineColor || '#999999';
+    if (elements.xAxisAlign) elements.xAxisAlign.value = config.xAxis.align || 'center';
+    if (elements.xAxisSort) elements.xAxisSort.value = config.xAxis.sort || 'default';
+    if (elements.xAxisMaxWidth) elements.xAxisMaxWidth.value = config.xAxis.maxWidth || 'none';
+
+    // Y-axis left settings
+    elements.yAxisLeftShow.checked = config.yAxisLeft.show;
+    elements.yAxisLeftTitle.value = config.yAxisLeft.title;
+    elements.yAxisLeftMin.value = config.yAxisLeft.min || '';
+    elements.yAxisLeftMax.value = config.yAxisLeft.max || '';
+    elements.yAxisLeftFormat.value = config.yAxisLeft.format;
+    if (elements.yAxisLeftShowTitle) elements.yAxisLeftShowTitle.checked = config.yAxisLeft.showTitle !== false;
+    if (elements.yAxisLeftShowLabels) elements.yAxisLeftShowLabels.checked = config.yAxisLeft.showLabels !== false;
+    if (elements.yAxisLeftShowTicks) elements.yAxisLeftShowTicks.checked = config.yAxisLeft.showTickMarks !== false;
+    if (elements.yAxisLeftShowLine) elements.yAxisLeftShowLine.checked = config.yAxisLeft.showAxisLine !== false;
+    if (elements.yAxisLineColor) elements.yAxisLineColor.value = config.yAxisLeft.lineColor || '#999999';
+
+    // Y-axis right settings
+    elements.yAxisRightShow.checked = config.yAxisRight.show;
+    elements.yAxisRightTitle.value = config.yAxisRight.title;
+    elements.yAxisRightMin.value = config.yAxisRight.min || '';
+    elements.yAxisRightMax.value = config.yAxisRight.max || '';
+    elements.yAxisRightFormat.value = config.yAxisRight.format;
+    if (elements.yAxisRightShowTitle) elements.yAxisRightShowTitle.checked = config.yAxisRight.showTitle !== false;
+    if (elements.yAxisRightShowLabels) elements.yAxisRightShowLabels.checked = config.yAxisRight.showLabels !== false;
+    if (elements.yAxisRightShowTicks) elements.yAxisRightShowTicks.checked = config.yAxisRight.showTickMarks !== false;
+    if (elements.yAxisRightShowLine) elements.yAxisRightShowLine.checked = config.yAxisRight.showAxisLine !== false;
+
+    // Grid settings
+    elements.gridHorizontal.checked = config.grid.horizontal;
+    elements.gridVertical.checked = config.grid.vertical;
+    elements.gridColor.value = config.grid.color;
+    elements.gridOpacity.value = config.grid.opacity;
+    elements.gridOpacityValue.textContent = config.grid.opacity;
+
+    // Title settings
+    elements.showTitle.checked = config.title.show;
+    elements.chartTitle.value = config.title.text;
+    elements.titleFontSize.value = config.title.fontSize;
+    elements.titleColor.value = config.title.color;
+    if (elements.titleBgColor) elements.titleBgColor.value = config.title.bgColor === 'transparent' ? '#ffffff' : (config.title.bgColor || '#ffffff');
+    if (elements.titleBgTransparent) elements.titleBgTransparent.checked = config.title.bgColor === 'transparent' || !config.title.bgColor;
+
+    // Bar labels
+    elements.showBarLabels.checked = config.barLabels.show;
+    elements.barLabelPosition.value = config.barLabels.position;
+    elements.barLabelFontSize.value = config.barLabels.fontSize;
+    elements.barLabelColor.value = config.barLabels.color;
+    if (elements.barLabelOffsetX) elements.barLabelOffsetX.value = config.barLabels.offsetX || 0;
+    if (elements.barLabelOffsetY) elements.barLabelOffsetY.value = config.barLabels.offsetY || 0;
+
+    // Line labels
+    elements.showLineLabels.checked = config.lineLabels.show;
+    elements.lineLabelPosition.value = config.lineLabels.position;
+    elements.lineLabelFontSize.value = config.lineLabels.fontSize;
+    elements.lineLabelColor.value = config.lineLabels.color;
+    if (elements.lineLabelOffsetX) elements.lineLabelOffsetX.value = config.lineLabels.offsetX || 0;
+    if (elements.lineLabelOffsetY) elements.lineLabelOffsetY.value = config.lineLabels.offsetY || 0;
+
+    // Legend
+    elements.showLegend.checked = config.legend.show;
+    elements.legendPosition.value = config.legend.position;
+    if (elements.legendBar1Label) elements.legendBar1Label.value = config.legend.bar1Label || '';
+    if (elements.legendBar2Label) elements.legendBar2Label.value = config.legend.bar2Label || '';
+    if (elements.legendLineLabel) elements.legendLineLabel.value = config.legend.lineLabel || '';
+    if (elements.legendBgColor) elements.legendBgColor.value = config.legend.bgColor === 'transparent' ? '#f8fafc' : (config.legend.bgColor || '#f8fafc');
+    if (elements.legendBgTransparent) elements.legendBgTransparent.checked = config.legend.bgColor === 'transparent' || !config.legend.bgColor;
+
+    // Tooltip
+    elements.showTooltip.checked = config.tooltip.show;
+    elements.tooltipShowDimension.checked = config.tooltip.showDimension;
+    elements.tooltipShowMeasureName.checked = config.tooltip.showMeasureName;
+    elements.tooltipShowValue.checked = config.tooltip.showValue;
+    elements.tooltipBgColor.value = config.tooltip.bgColor;
+    elements.tooltipTextColor.value = config.tooltip.textColor;
+    elements.tooltipFontSize.value = config.tooltip.fontSize;
+
+    // Animation settings
+    if (config.animation) {
+      elements.animationEnabled.checked = config.animation.enabled;
+      elements.animationDuration.value = config.animation.duration;
+      elements.animationDurationValue.textContent = config.animation.duration;
+      elements.animationEasing.value = config.animation.easing;
+    }
+
+    // Font settings
+    if (config.font) {
+      elements.fontFamily.value = config.font.family;
+      elements.titleWeight.value = config.font.titleWeight;
+      elements.labelWeight.value = config.font.labelWeight;
+    }
+
+    // Header controls
+    if (config.headerControls) {
+      if (elements.showLegendToggle) elements.showLegendToggle.checked = config.headerControls.showLegendToggle !== false;
+      if (elements.showSettingsCog) elements.showSettingsCog.checked = config.headerControls.showSettingsCog !== false;
+    }
+
+    // Individual font settings
+    if (config.titleFont) {
+      if (elements.titleFontFamily) elements.titleFontFamily.value = config.titleFont.family || '';
+      if (elements.titleFontWeight) elements.titleFontWeight.value = config.titleFont.weight || 600;
+      if (elements.titleItalic) elements.titleItalic.checked = config.titleFont.italic || false;
+    }
+    if (config.xAxisFont) {
+      if (elements.xAxisFontFamily) elements.xAxisFontFamily.value = config.xAxisFont.family || '';
+      if (elements.xAxisFontWeight) elements.xAxisFontWeight.value = config.xAxisFont.weight || 400;
+      if (elements.xAxisFontColor) elements.xAxisFontColor.value = config.xAxisFont.color || '#666666';
+    }
+    if (config.yAxisFont) {
+      if (elements.yAxisFontFamily) elements.yAxisFontFamily.value = config.yAxisFont.family || '';
+      if (elements.yAxisFontSize) elements.yAxisFontSize.value = config.yAxisFont.size || 12;
+      if (elements.yAxisFontWeight) elements.yAxisFontWeight.value = config.yAxisFont.weight || 400;
+      if (elements.yAxisFontColor) elements.yAxisFontColor.value = config.yAxisFont.color || '#666666';
+    }
+    if (config.legendFont) {
+      if (elements.legendFontFamily) elements.legendFontFamily.value = config.legendFont.family || '';
+      if (elements.legendFontSize) elements.legendFontSize.value = config.legendFont.size || 12;
+      if (elements.legendFontWeight) elements.legendFontWeight.value = config.legendFont.weight || 400;
+      if (elements.legendFontColor) elements.legendFontColor.value = config.legendFont.color || '#333333';
+      if (elements.legendItalic) elements.legendItalic.checked = config.legendFont.italic || false;
+    }
+    if (config.barLabelFont) {
+      if (elements.barLabelFontFamily) elements.barLabelFontFamily.value = config.barLabelFont.family || '';
+      if (elements.barLabelFontWeight) elements.barLabelFontWeight.value = config.barLabelFont.weight || 400;
+      if (elements.barLabelItalic) elements.barLabelItalic.checked = config.barLabelFont.italic || false;
+    }
+    // Bar 1 label font
+    if (config.bar1LabelFont) {
+      if (elements.bar1LabelFontFamily) elements.bar1LabelFontFamily.value = config.bar1LabelFont.family || '';
+      if (elements.bar1LabelFontSize) elements.bar1LabelFontSize.value = config.bar1LabelFont.size || 10;
+      if (elements.bar1LabelFontWeight) elements.bar1LabelFontWeight.value = config.bar1LabelFont.weight || 400;
+      if (elements.bar1LabelColor) elements.bar1LabelColor.value = config.bar1LabelFont.color || '#333333';
+      if (elements.bar1LabelItalic) elements.bar1LabelItalic.checked = config.bar1LabelFont.italic || false;
+    }
+    // Bar 2 label font
+    if (config.bar2LabelFont) {
+      if (elements.bar2LabelFontFamily) elements.bar2LabelFontFamily.value = config.bar2LabelFont.family || '';
+      if (elements.bar2LabelFontSize) elements.bar2LabelFontSize.value = config.bar2LabelFont.size || 10;
+      if (elements.bar2LabelFontWeight) elements.bar2LabelFontWeight.value = config.bar2LabelFont.weight || 400;
+      if (elements.bar2LabelColor) elements.bar2LabelColor.value = config.bar2LabelFont.color || '#333333';
+      if (elements.bar2LabelItalic) elements.bar2LabelItalic.checked = config.bar2LabelFont.italic || false;
+    }
+    if (config.lineLabelFont) {
+      if (elements.lineLabelFontFamily) elements.lineLabelFontFamily.value = config.lineLabelFont.family || '';
+      if (elements.lineLabelFontWeight) elements.lineLabelFontWeight.value = config.lineLabelFont.weight || 400;
+      if (elements.lineLabelItalic) elements.lineLabelItalic.checked = config.lineLabelFont.italic || false;
+    }
+    if (config.tooltipFont) {
+      if (elements.tooltipFontFamily) elements.tooltipFontFamily.value = config.tooltipFont.family || '';
+      if (elements.tooltipFontWeight) elements.tooltipFontWeight.value = config.tooltipFont.weight || 400;
+    }
+
+    // Update UI state
+    updatePointsOptionsVisibility();
+    updateYAxisRightVisibility();
+    updateAnimationOptionsVisibility();
+    updateFontPreview();
+  }
+
+  /**
+   * Set up event listeners
+   */
+  function setupEventListeners() {
+    // Helper to safely add event listener
+    const safeAddListener = (element, event, handler) => {
+      if (element) element.addEventListener(event, handler);
+    };
+
+    // Field changes
+    safeAddListener(elements.dimensionSelect, 'change', (e) => {
+      config.dimension = e.target.value;
+      updateFieldLabels();
+    });
+    safeAddListener(elements.bar1Measure, 'change', (e) => {
+      config.bar1Measure = e.target.value;
+      updateFieldLabels();
+    });
+    safeAddListener(elements.bar2Measure, 'change', (e) => {
+      config.bar2Measure = e.target.value;
+      updateFieldLabels();
+    });
+    safeAddListener(elements.lineMeasure, 'change', (e) => {
+      config.lineMeasure = e.target.value;
+      updateFieldLabels();
+    });
+
+    // Bar style radio
+    document.querySelectorAll('input[name="bar-style"]').forEach(radio => {
+      radio.addEventListener('change', (e) => config.barStyle = e.target.value);
+    });
+
+    // Swap bars button
+    if (elements.swapBarsBtn) {
+      elements.swapBarsBtn.addEventListener('click', swapBars);
+    }
+
+    // Sync dual axis checkbox
+    if (elements.syncDualAxis) {
+      elements.syncDualAxis.addEventListener('change', (e) => {
+        config.syncDualAxis = e.target.checked;
+      });
+    }
+
+    // Range inputs with value display
+    setupRangeInput(elements.barPadding, elements.barPaddingValue, (v) => config.barPadding = parseFloat(v));
+    setupRangeInput(elements.bar1Opacity, elements.bar1OpacityValue, (v) => config.bar1.opacity = parseFloat(v));
+    setupRangeInput(elements.bar1CornerRadius, elements.bar1CornerRadiusValue, (v) => config.bar1.cornerRadius = parseInt(v));
+    setupRangeInput(elements.bar2Opacity, elements.bar2OpacityValue, (v) => config.bar2.opacity = parseFloat(v));
+    setupRangeInput(elements.bar2CornerRadius, elements.bar2CornerRadiusValue, (v) => config.bar2.cornerRadius = parseInt(v));
+    setupRangeInput(elements.lineOpacity, elements.lineOpacityValue, (v) => config.line.opacity = parseFloat(v));
+    setupRangeInput(elements.gridOpacity, elements.gridOpacityValue, (v) => config.grid.opacity = parseFloat(v));
+
+    // Border visibility toggles
+    if (elements.bar1ShowBorder) {
+      elements.bar1ShowBorder.addEventListener('change', (e) => {
+        config.bar1.showBorder = e.target.checked;
+        updateBar1BorderVisibility();
+      });
+    }
+    if (elements.bar2ShowBorder) {
+      elements.bar2ShowBorder.addEventListener('change', (e) => {
+        config.bar2.showBorder = e.target.checked;
+        updateBar2BorderVisibility();
+      });
+    }
+
+    // Color inputs
+    safeAddListener(elements.bar1Color, 'change', (e) => config.bar1.color = e.target.value);
+    safeAddListener(elements.bar1BorderColor, 'change', (e) => config.bar1.borderColor = e.target.value);
+    safeAddListener(elements.bar2Color, 'change', (e) => config.bar2.color = e.target.value);
+    safeAddListener(elements.bar2BorderColor, 'change', (e) => config.bar2.borderColor = e.target.value);
+    safeAddListener(elements.lineColor, 'change', (e) => config.line.color = e.target.value);
+    safeAddListener(elements.pointFill, 'change', (e) => config.points.fill = e.target.value);
+    safeAddListener(elements.pointStroke, 'change', (e) => config.points.stroke = e.target.value);
+    safeAddListener(elements.gridColor, 'change', (e) => config.grid.color = e.target.value);
+    safeAddListener(elements.titleColor, 'change', (e) => config.title.color = e.target.value);
+    safeAddListener(elements.barLabelColor, 'change', (e) => config.barLabels.color = e.target.value);
+    safeAddListener(elements.lineLabelColor, 'change', (e) => config.lineLabels.color = e.target.value);
+    safeAddListener(elements.tooltipBgColor, 'change', (e) => config.tooltip.bgColor = e.target.value);
+    safeAddListener(elements.tooltipTextColor, 'change', (e) => config.tooltip.textColor = e.target.value);
+
+    // Number inputs
+    safeAddListener(elements.bar1BorderWidth, 'change', (e) => config.bar1.borderWidth = parseInt(e.target.value));
+    safeAddListener(elements.bar2BorderWidth, 'change', (e) => config.bar2.borderWidth = parseInt(e.target.value));
+    safeAddListener(elements.lineWidth, 'change', (e) => config.line.width = parseInt(e.target.value));
+    safeAddListener(elements.pointSize, 'change', (e) => config.points.size = parseInt(e.target.value));
+    safeAddListener(elements.xAxisFontSize, 'change', (e) => config.xAxis.fontSize = parseInt(e.target.value));
+    safeAddListener(elements.titleFontSize, 'change', (e) => config.title.fontSize = parseInt(e.target.value));
+    safeAddListener(elements.barLabelFontSize, 'change', (e) => config.barLabels.fontSize = parseInt(e.target.value));
+    safeAddListener(elements.lineLabelFontSize, 'change', (e) => config.lineLabels.fontSize = parseInt(e.target.value));
+    safeAddListener(elements.tooltipFontSize, 'change', (e) => config.tooltip.fontSize = parseInt(e.target.value));
+
+    // Select inputs
+    safeAddListener(elements.lineStyle, 'change', (e) => config.line.style = e.target.value);
+    safeAddListener(elements.lineCurve, 'change', (e) => config.line.curve = e.target.value);
+    safeAddListener(elements.pointShape, 'change', (e) => config.points.shape = e.target.value);
+    safeAddListener(elements.xAxisRotation, 'change', (e) => config.xAxis.rotation = parseInt(e.target.value));
+    safeAddListener(elements.yAxisLeftFormat, 'change', (e) => config.yAxisLeft.format = e.target.value);
+    safeAddListener(elements.yAxisRightFormat, 'change', (e) => config.yAxisRight.format = e.target.value);
+    safeAddListener(elements.barLabelPosition, 'change', (e) => config.barLabels.position = e.target.value);
+    safeAddListener(elements.lineLabelPosition, 'change', (e) => config.lineLabels.position = e.target.value);
+    safeAddListener(elements.legendPosition, 'change', (e) => config.legend.position = e.target.value);
+    safeAddListener(elements.legendBar1Label, 'change', (e) => config.legend.bar1Label = e.target.value);
+    safeAddListener(elements.legendBar2Label, 'change', (e) => config.legend.bar2Label = e.target.value);
+    safeAddListener(elements.legendLineLabel, 'change', (e) => config.legend.lineLabel = e.target.value);
+
+    // Text inputs
+    safeAddListener(elements.xAxisTitle, 'change', (e) => config.xAxis.title = e.target.value);
+    safeAddListener(elements.yAxisLeftTitle, 'change', (e) => config.yAxisLeft.title = e.target.value);
+    safeAddListener(elements.yAxisRightTitle, 'change', (e) => config.yAxisRight.title = e.target.value);
+    safeAddListener(elements.chartTitle, 'change', (e) => config.title.text = e.target.value);
+
+    // Min/Max inputs
+    safeAddListener(elements.yAxisLeftMin, 'change', (e) => config.yAxisLeft.min = e.target.value ? parseFloat(e.target.value) : null);
+    safeAddListener(elements.yAxisLeftMax, 'change', (e) => config.yAxisLeft.max = e.target.value ? parseFloat(e.target.value) : null);
+    safeAddListener(elements.yAxisRightMin, 'change', (e) => config.yAxisRight.min = e.target.value ? parseFloat(e.target.value) : null);
+    safeAddListener(elements.yAxisRightMax, 'change', (e) => config.yAxisRight.max = e.target.value ? parseFloat(e.target.value) : null);
+
+    // Checkbox inputs
+    safeAddListener(elements.showPoints, 'change', (e) => {
+      config.points.show = e.target.checked;
+      updatePointsOptionsVisibility();
+    });
+    safeAddListener(elements.xAxisShow, 'change', (e) => config.xAxis.show = e.target.checked);
+    safeAddListener(elements.yAxisLeftShow, 'change', (e) => config.yAxisLeft.show = e.target.checked);
+    safeAddListener(elements.yAxisRightShow, 'change', (e) => config.yAxisRight.show = e.target.checked);
+    safeAddListener(elements.gridHorizontal, 'change', (e) => config.grid.horizontal = e.target.checked);
+    safeAddListener(elements.gridVertical, 'change', (e) => config.grid.vertical = e.target.checked);
+    safeAddListener(elements.showTitle, 'change', (e) => config.title.show = e.target.checked);
+    safeAddListener(elements.showBarLabels, 'change', (e) => config.barLabels.show = e.target.checked);
+    safeAddListener(elements.showLineLabels, 'change', (e) => config.lineLabels.show = e.target.checked);
+    safeAddListener(elements.showLegend, 'change', (e) => config.legend.show = e.target.checked);
+    safeAddListener(elements.showTooltip, 'change', (e) => config.tooltip.show = e.target.checked);
+    safeAddListener(elements.tooltipShowDimension, 'change', (e) => config.tooltip.showDimension = e.target.checked);
+    safeAddListener(elements.tooltipShowMeasureName, 'change', (e) => config.tooltip.showMeasureName = e.target.checked);
+    safeAddListener(elements.tooltipShowValue, 'change', (e) => config.tooltip.showValue = e.target.checked);
+
+    // Axis mode radio
+    document.querySelectorAll('input[name="axis-mode"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        config.axisMode = e.target.value;
+        updateYAxisRightVisibility();
+      });
+    });
+
+    // Animation settings
+    safeAddListener(elements.animationEnabled, 'change', (e) => {
+      if (!config.animation) config.animation = {};
+      config.animation.enabled = e.target.checked;
+      updateAnimationOptionsVisibility();
+    });
+    if (elements.animationDuration && elements.animationDurationValue) {
+      setupRangeInput(elements.animationDuration, elements.animationDurationValue, (v) => {
+        if (!config.animation) config.animation = {};
+        config.animation.duration = parseInt(v);
+      });
+    }
+    safeAddListener(elements.animationEasing, 'change', (e) => {
+      if (!config.animation) config.animation = {};
+      config.animation.easing = e.target.value;
+    });
+    safeAddListener(elements.previewAnimation, 'click', previewAnimation);
+
+    // Font settings
+    safeAddListener(elements.fontFamily, 'change', (e) => {
+      if (!config.font) config.font = {};
+      config.font.family = e.target.value;
+      updateFontPreview();
+    });
+    safeAddListener(elements.titleWeight, 'change', (e) => {
+      if (!config.font) config.font = {};
+      config.font.titleWeight = parseInt(e.target.value);
+      updateFontPreview();
+    });
+    safeAddListener(elements.labelWeight, 'change', (e) => {
+      if (!config.font) config.font = {};
+      config.font.labelWeight = parseInt(e.target.value);
+      updateFontPreview();
+    });
+
+    // Header controls
+    if (elements.showLegendToggle) {
+      elements.showLegendToggle.addEventListener('change', (e) => {
+        if (!config.headerControls) config.headerControls = {};
+        config.headerControls.showLegendToggle = e.target.checked;
+      });
+    }
+    if (elements.showSettingsCog) {
+      elements.showSettingsCog.addEventListener('change', (e) => {
+        if (!config.headerControls) config.headerControls = {};
+        config.headerControls.showSettingsCog = e.target.checked;
+      });
+    }
+
+    // Title font settings
+    if (elements.titleFontFamily) {
+      elements.titleFontFamily.addEventListener('change', (e) => {
+        if (!config.titleFont) config.titleFont = {};
+        config.titleFont.family = e.target.value;
+      });
+    }
+    if (elements.titleFontWeight) {
+      elements.titleFontWeight.addEventListener('change', (e) => {
+        if (!config.titleFont) config.titleFont = {};
+        config.titleFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.titleItalic) {
+      elements.titleItalic.addEventListener('change', (e) => {
+        if (!config.titleFont) config.titleFont = {};
+        config.titleFont.italic = e.target.checked;
+      });
+    }
+    // Sync title-color to titleFont.color
+    safeAddListener(elements.titleColor, 'change', (e) => {
+      config.title.color = e.target.value;
+      if (!config.titleFont) config.titleFont = {};
+      config.titleFont.color = e.target.value;
+    });
+    // Sync title-font-size to titleFont.size
+    safeAddListener(elements.titleFontSize, 'change', (e) => {
+      config.title.fontSize = parseInt(e.target.value);
+      if (!config.titleFont) config.titleFont = {};
+      config.titleFont.size = parseInt(e.target.value);
+    });
+
+    // X-Axis font settings
+    if (elements.xAxisFontFamily) {
+      elements.xAxisFontFamily.addEventListener('change', (e) => {
+        if (!config.xAxisFont) config.xAxisFont = {};
+        config.xAxisFont.family = e.target.value;
+      });
+    }
+    if (elements.xAxisFontWeight) {
+      elements.xAxisFontWeight.addEventListener('change', (e) => {
+        if (!config.xAxisFont) config.xAxisFont = {};
+        config.xAxisFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.xAxisFontColor) {
+      elements.xAxisFontColor.addEventListener('change', (e) => {
+        if (!config.xAxisFont) config.xAxisFont = {};
+        config.xAxisFont.color = e.target.value;
+      });
+    }
+    // Sync x-axis-font-size to xAxisFont.size
+    safeAddListener(elements.xAxisFontSize, 'change', (e) => {
+      config.xAxis.fontSize = parseInt(e.target.value);
+      if (!config.xAxisFont) config.xAxisFont = {};
+      config.xAxisFont.size = parseInt(e.target.value);
+    });
+
+    // X-Axis visibility toggles
+    if (elements.xAxisShowTitle) {
+      elements.xAxisShowTitle.addEventListener('change', (e) => {
+        config.xAxis.showTitle = e.target.checked;
+      });
+    }
+    if (elements.xAxisShowLabels) {
+      elements.xAxisShowLabels.addEventListener('change', (e) => {
+        config.xAxis.showLabels = e.target.checked;
+      });
+    }
+    if (elements.xAxisShowTicks) {
+      elements.xAxisShowTicks.addEventListener('change', (e) => {
+        config.xAxis.showTickMarks = e.target.checked;
+      });
+    }
+    if (elements.xAxisShowLine) {
+      elements.xAxisShowLine.addEventListener('change', (e) => {
+        config.xAxis.showAxisLine = e.target.checked;
+      });
+    }
+    if (elements.xAxisLineColor) {
+      elements.xAxisLineColor.addEventListener('change', (e) => {
+        config.xAxis.lineColor = e.target.value;
+        config.xAxis.tickColor = e.target.value;
+      });
+    }
+    if (elements.xAxisAlign) {
+      elements.xAxisAlign.addEventListener('change', (e) => {
+        config.xAxis.align = e.target.value;
+      });
+    }
+    if (elements.xAxisSort) {
+      elements.xAxisSort.addEventListener('change', (e) => {
+        config.xAxis.sort = e.target.value;
+      });
+    }
+    if (elements.xAxisMaxWidth) {
+      elements.xAxisMaxWidth.addEventListener('change', (e) => {
+        config.xAxis.maxWidth = e.target.value;
+      });
+    }
+
+    // Y-Axis font settings
+    if (elements.yAxisFontFamily) {
+      elements.yAxisFontFamily.addEventListener('change', (e) => {
+        if (!config.yAxisFont) config.yAxisFont = {};
+        config.yAxisFont.family = e.target.value;
+      });
+    }
+    if (elements.yAxisFontSize) {
+      elements.yAxisFontSize.addEventListener('change', (e) => {
+        if (!config.yAxisFont) config.yAxisFont = {};
+        config.yAxisFont.size = parseInt(e.target.value);
+      });
+    }
+    if (elements.yAxisFontWeight) {
+      elements.yAxisFontWeight.addEventListener('change', (e) => {
+        if (!config.yAxisFont) config.yAxisFont = {};
+        config.yAxisFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.yAxisFontColor) {
+      elements.yAxisFontColor.addEventListener('change', (e) => {
+        if (!config.yAxisFont) config.yAxisFont = {};
+        config.yAxisFont.color = e.target.value;
+      });
+    }
+
+    // Y-Axis visibility toggles
+    if (elements.yAxisLeftShowTitle) {
+      elements.yAxisLeftShowTitle.addEventListener('change', (e) => {
+        config.yAxisLeft.showTitle = e.target.checked;
+      });
+    }
+    if (elements.yAxisLeftShowLabels) {
+      elements.yAxisLeftShowLabels.addEventListener('change', (e) => {
+        config.yAxisLeft.showLabels = e.target.checked;
+      });
+    }
+    if (elements.yAxisLeftShowTicks) {
+      elements.yAxisLeftShowTicks.addEventListener('change', (e) => {
+        config.yAxisLeft.showTickMarks = e.target.checked;
+      });
+    }
+    if (elements.yAxisLeftShowLine) {
+      elements.yAxisLeftShowLine.addEventListener('change', (e) => {
+        config.yAxisLeft.showAxisLine = e.target.checked;
+      });
+    }
+    if (elements.yAxisLineColor) {
+      elements.yAxisLineColor.addEventListener('change', (e) => {
+        config.yAxisLeft.lineColor = e.target.value;
+        config.yAxisLeft.tickColor = e.target.value;
+        config.yAxisRight.lineColor = e.target.value;
+        config.yAxisRight.tickColor = e.target.value;
+      });
+    }
+
+    // Y-Axis Right visibility toggles
+    if (elements.yAxisRightShowTitle) {
+      elements.yAxisRightShowTitle.addEventListener('change', (e) => {
+        config.yAxisRight.showTitle = e.target.checked;
+      });
+    }
+    if (elements.yAxisRightShowLabels) {
+      elements.yAxisRightShowLabels.addEventListener('change', (e) => {
+        config.yAxisRight.showLabels = e.target.checked;
+      });
+    }
+    if (elements.yAxisRightShowTicks) {
+      elements.yAxisRightShowTicks.addEventListener('change', (e) => {
+        config.yAxisRight.showTickMarks = e.target.checked;
+      });
+    }
+    if (elements.yAxisRightShowLine) {
+      elements.yAxisRightShowLine.addEventListener('change', (e) => {
+        config.yAxisRight.showAxisLine = e.target.checked;
+      });
+    }
+
+    // Legend font settings
+    if (elements.legendFontFamily) {
+      elements.legendFontFamily.addEventListener('change', (e) => {
+        if (!config.legendFont) config.legendFont = {};
+        config.legendFont.family = e.target.value;
+      });
+    }
+    if (elements.legendFontSize) {
+      elements.legendFontSize.addEventListener('change', (e) => {
+        if (!config.legendFont) config.legendFont = {};
+        config.legendFont.size = parseInt(e.target.value);
+      });
+    }
+    if (elements.legendFontWeight) {
+      elements.legendFontWeight.addEventListener('change', (e) => {
+        if (!config.legendFont) config.legendFont = {};
+        config.legendFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.legendFontColor) {
+      elements.legendFontColor.addEventListener('change', (e) => {
+        if (!config.legendFont) config.legendFont = {};
+        config.legendFont.color = e.target.value;
+      });
+    }
+    if (elements.legendItalic) {
+      elements.legendItalic.addEventListener('change', (e) => {
+        if (!config.legendFont) config.legendFont = {};
+        config.legendFont.italic = e.target.checked;
+      });
+    }
+
+    // Legend background color
+    if (elements.legendBgColor) {
+      elements.legendBgColor.addEventListener('change', (e) => {
+        if (!elements.legendBgTransparent.checked) {
+          config.legend.bgColor = e.target.value;
+        }
+      });
+    }
+    if (elements.legendBgTransparent) {
+      elements.legendBgTransparent.addEventListener('change', (e) => {
+        config.legend.bgColor = e.target.checked ? 'transparent' : elements.legendBgColor.value;
+      });
+    }
+
+    // Title background color
+    if (elements.titleBgColor) {
+      elements.titleBgColor.addEventListener('change', (e) => {
+        if (!elements.titleBgTransparent.checked) {
+          config.title.bgColor = e.target.value;
+        }
+      });
+    }
+    if (elements.titleBgTransparent) {
+      elements.titleBgTransparent.addEventListener('change', (e) => {
+        config.title.bgColor = e.target.checked ? 'transparent' : elements.titleBgColor.value;
+      });
+    }
+
+    // Bar label font settings
+    if (elements.barLabelFontFamily) {
+      elements.barLabelFontFamily.addEventListener('change', (e) => {
+        if (!config.barLabelFont) config.barLabelFont = {};
+        config.barLabelFont.family = e.target.value;
+      });
+    }
+    if (elements.barLabelFontWeight) {
+      elements.barLabelFontWeight.addEventListener('change', (e) => {
+        if (!config.barLabelFont) config.barLabelFont = {};
+        config.barLabelFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.barLabelItalic) {
+      elements.barLabelItalic.addEventListener('change', (e) => {
+        if (!config.barLabelFont) config.barLabelFont = {};
+        config.barLabelFont.italic = e.target.checked;
+      });
+    }
+    // Sync bar-label-font-size to barLabelFont.size
+    safeAddListener(elements.barLabelFontSize, 'change', (e) => {
+      config.barLabels.fontSize = parseInt(e.target.value);
+      if (!config.barLabelFont) config.barLabelFont = {};
+      config.barLabelFont.size = parseInt(e.target.value);
+    });
+    // Sync bar-label-color to barLabelFont.color
+    safeAddListener(elements.barLabelColor, 'change', (e) => {
+      config.barLabels.color = e.target.value;
+      if (!config.barLabelFont) config.barLabelFont = {};
+      config.barLabelFont.color = e.target.value;
+    });
+    // Bar label offset
+    if (elements.barLabelOffsetX) {
+      elements.barLabelOffsetX.addEventListener('change', (e) => {
+        config.barLabels.offsetX = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.barLabelOffsetY) {
+      elements.barLabelOffsetY.addEventListener('change', (e) => {
+        config.barLabels.offsetY = parseInt(e.target.value) || 0;
+      });
+    }
+
+    // Bar 1 label font settings
+    if (elements.bar1LabelFontFamily) {
+      elements.bar1LabelFontFamily.addEventListener('change', (e) => {
+        if (!config.bar1LabelFont) config.bar1LabelFont = {};
+        config.bar1LabelFont.family = e.target.value;
+      });
+    }
+    if (elements.bar1LabelFontSize) {
+      elements.bar1LabelFontSize.addEventListener('change', (e) => {
+        if (!config.bar1LabelFont) config.bar1LabelFont = {};
+        config.bar1LabelFont.size = parseInt(e.target.value);
+      });
+    }
+    if (elements.bar1LabelFontWeight) {
+      elements.bar1LabelFontWeight.addEventListener('change', (e) => {
+        if (!config.bar1LabelFont) config.bar1LabelFont = {};
+        config.bar1LabelFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.bar1LabelColor) {
+      elements.bar1LabelColor.addEventListener('change', (e) => {
+        if (!config.bar1LabelFont) config.bar1LabelFont = {};
+        config.bar1LabelFont.color = e.target.value;
+      });
+    }
+    if (elements.bar1LabelItalic) {
+      elements.bar1LabelItalic.addEventListener('change', (e) => {
+        if (!config.bar1LabelFont) config.bar1LabelFont = {};
+        config.bar1LabelFont.italic = e.target.checked;
+      });
+    }
+
+    // Bar 2 label font settings
+    if (elements.bar2LabelFontFamily) {
+      elements.bar2LabelFontFamily.addEventListener('change', (e) => {
+        if (!config.bar2LabelFont) config.bar2LabelFont = {};
+        config.bar2LabelFont.family = e.target.value;
+      });
+    }
+    if (elements.bar2LabelFontSize) {
+      elements.bar2LabelFontSize.addEventListener('change', (e) => {
+        if (!config.bar2LabelFont) config.bar2LabelFont = {};
+        config.bar2LabelFont.size = parseInt(e.target.value);
+      });
+    }
+    if (elements.bar2LabelFontWeight) {
+      elements.bar2LabelFontWeight.addEventListener('change', (e) => {
+        if (!config.bar2LabelFont) config.bar2LabelFont = {};
+        config.bar2LabelFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.bar2LabelColor) {
+      elements.bar2LabelColor.addEventListener('change', (e) => {
+        if (!config.bar2LabelFont) config.bar2LabelFont = {};
+        config.bar2LabelFont.color = e.target.value;
+      });
+    }
+    if (elements.bar2LabelItalic) {
+      elements.bar2LabelItalic.addEventListener('change', (e) => {
+        if (!config.bar2LabelFont) config.bar2LabelFont = {};
+        config.bar2LabelFont.italic = e.target.checked;
+      });
+    }
+
+    // Line label font settings
+    if (elements.lineLabelFontFamily) {
+      elements.lineLabelFontFamily.addEventListener('change', (e) => {
+        if (!config.lineLabelFont) config.lineLabelFont = {};
+        config.lineLabelFont.family = e.target.value;
+      });
+    }
+    if (elements.lineLabelFontWeight) {
+      elements.lineLabelFontWeight.addEventListener('change', (e) => {
+        if (!config.lineLabelFont) config.lineLabelFont = {};
+        config.lineLabelFont.weight = parseInt(e.target.value);
+      });
+    }
+    if (elements.lineLabelItalic) {
+      elements.lineLabelItalic.addEventListener('change', (e) => {
+        if (!config.lineLabelFont) config.lineLabelFont = {};
+        config.lineLabelFont.italic = e.target.checked;
+      });
+    }
+    // Sync line-label-font-size to lineLabelFont.size
+    safeAddListener(elements.lineLabelFontSize, 'change', (e) => {
+      config.lineLabels.fontSize = parseInt(e.target.value);
+      if (!config.lineLabelFont) config.lineLabelFont = {};
+      config.lineLabelFont.size = parseInt(e.target.value);
+    });
+    // Sync line-label-color to lineLabelFont.color
+    safeAddListener(elements.lineLabelColor, 'change', (e) => {
+      config.lineLabels.color = e.target.value;
+      if (!config.lineLabelFont) config.lineLabelFont = {};
+      config.lineLabelFont.color = e.target.value;
+    });
+    // Line label offset
+    if (elements.lineLabelOffsetX) {
+      elements.lineLabelOffsetX.addEventListener('change', (e) => {
+        config.lineLabels.offsetX = parseInt(e.target.value) || 0;
+      });
+    }
+    if (elements.lineLabelOffsetY) {
+      elements.lineLabelOffsetY.addEventListener('change', (e) => {
+        config.lineLabels.offsetY = parseInt(e.target.value) || 0;
+      });
+    }
+
+    // Tooltip font settings
+    if (elements.tooltipFontFamily) {
+      elements.tooltipFontFamily.addEventListener('change', (e) => {
+        if (!config.tooltipFont) config.tooltipFont = {};
+        config.tooltipFont.family = e.target.value;
+      });
+    }
+    if (elements.tooltipFontWeight) {
+      elements.tooltipFontWeight.addEventListener('change', (e) => {
+        if (!config.tooltipFont) config.tooltipFont = {};
+        config.tooltipFont.weight = parseInt(e.target.value);
+      });
+    }
+    // Sync tooltip-font-size to tooltipFont.size
+    safeAddListener(elements.tooltipFontSize, 'change', (e) => {
+      config.tooltip.fontSize = parseInt(e.target.value);
+      if (!config.tooltipFont) config.tooltipFont = {};
+      config.tooltipFont.size = parseInt(e.target.value);
+    });
+    // Sync tooltip-text-color to tooltipFont.color
+    safeAddListener(elements.tooltipTextColor, 'change', (e) => {
+      config.tooltip.textColor = e.target.value;
+      if (!config.tooltipFont) config.tooltipFont = {};
+      config.tooltipFont.color = e.target.value;
+    });
+
+    // Dialog appearance options
+    safeAddListener(elements.showSectionDividers, 'change', (e) => {
+      document.body.classList.toggle('hide-section-dividers', !e.target.checked);
+    });
+    safeAddListener(elements.compactMode, 'change', (e) => {
+      document.body.classList.toggle('compact-mode', e.target.checked);
+    });
+
+    // Buttons
+    safeAddListener(elements.cancelBtn, 'click', closeDialog);
+    safeAddListener(elements.applyBtn, 'click', applyChanges);
+    safeAddListener(elements.saveBtn, 'click', saveAndClose);
+    safeAddListener(elements.resetBtn, 'click', resetToDefaults);
+  }
+
+  /**
+   * Reset all settings to defaults
+   */
+  function resetToDefaults() {
+    if (!confirm('Reset all settings to their default values? This cannot be undone.')) {
+      return;
+    }
+
+    // Preserve current data field selections
+    const preservedFields = {
+      dimension: config.dimension,
+      bar1Measure: config.bar1Measure,
+      bar2Measure: config.bar2Measure,
+      lineMeasure: config.lineMeasure
+    };
+
+    // Reset to defaults
+    config = getDefaultConfig();
+
+    // Restore data field selections
+    config.dimension = preservedFields.dimension;
+    config.bar1Measure = preservedFields.bar1Measure;
+    config.bar2Measure = preservedFields.bar2Measure;
+    config.lineMeasure = preservedFields.lineMeasure;
+
+    // Repopulate form with reset values
+    populateForm();
+
+    // Update field labels
+    updateFieldLabels();
+
+    // Show feedback
+    const btn = elements.resetBtn;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Reset!';
+    btn.style.color = 'var(--success)';
+
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.color = '';
+    }, 1500);
+  }
+
+  /**
+   * Apply changes without closing dialog (preview)
+   */
+  async function applyChanges() {
+    const errors = validate();
+
+    if (errors.length > 0) {
+      alert('Please fix the following errors:\n\n' + errors.join('\n'));
+      return;
+    }
+
+    const btn = elements.applyBtn;
+    const originalText = btn.textContent;
+    btn.textContent = 'Applying...';
+    btn.classList.add('btn-applying');
+
+    try {
+      tableau.extensions.settings.set('comboChartConfig', JSON.stringify(config));
+      await tableau.extensions.settings.saveAsync();
+
+      // Show success feedback
+      btn.textContent = 'Applied!';
+      btn.style.color = 'var(--success)';
+
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('btn-applying');
+        btn.style.color = '';
+      }, 1500);
+    } catch (error) {
+      console.error('Error applying settings:', error);
+      btn.textContent = 'Error!';
+      btn.style.color = 'var(--error)';
+
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('btn-applying');
+        btn.style.color = '';
+      }, 1500);
+    }
+  }
+
+  /**
+   * Helper to set up range input with value display
+   */
+  function setupRangeInput(rangeEl, valueEl, callback) {
+    rangeEl.addEventListener('input', (e) => {
+      valueEl.textContent = e.target.value;
+      callback(e.target.value);
+    });
+  }
+
+  /**
+   * Set up tab navigation
+   */
+  function setupTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    console.log('[DialogConfig] Setting up tabs. Found', tabBtns.length, 'tab buttons');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const tabId = btn.dataset.tab;
+        console.log('[DialogConfig] Tab clicked:', tabId);
+
+        // Update active states
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+
+        btn.classList.add('active');
+        const tabContent = document.getElementById(`tab-${tabId}`);
+        if (tabContent) {
+          tabContent.classList.add('active');
+        } else {
+          console.error('[DialogConfig] Tab content not found:', `tab-${tabId}`);
+        }
+      });
+    });
+  }
+
+  /**
+   * Update points options visibility
+   */
+  function updatePointsOptionsVisibility() {
+    const show = elements.showPoints.checked;
+    document.getElementById('points-options').style.display = show ? 'flex' : 'none';
+    document.getElementById('points-color-options').style.display = show ? 'flex' : 'none';
+  }
+
+  /**
+   * Update Y-axis right section visibility
+   */
+  function updateYAxisRightVisibility() {
+    const isDual = config.axisMode === 'dual';
+    document.getElementById('y-axis-right-section').style.display = isDual ? 'block' : 'none';
+    updateSyncAxisVisibility();
+  }
+
+  /**
+   * Update sync axis option visibility (only show in dual mode)
+   */
+  function updateSyncAxisVisibility() {
+    if (elements.syncAxisOption) {
+      const isDual = config.axisMode === 'dual';
+      elements.syncAxisOption.style.display = isDual ? 'block' : 'none';
+    }
+  }
+
+  /**
+   * Update animation options visibility
+   */
+  function updateAnimationOptionsVisibility() {
+    const enabled = elements.animationEnabled.checked;
+    if (elements.animationOptions) {
+      elements.animationOptions.classList.toggle('disabled', !enabled);
+    }
+  }
+
+  /**
+   * Swap bar 1 and bar 2 data and styling
+   */
+  function swapBars() {
+    // Swap data field selections
+    const tempMeasure = config.bar1Measure;
+    config.bar1Measure = config.bar2Measure;
+    config.bar2Measure = tempMeasure;
+
+    // Swap bar styling
+    const tempBar1 = { ...config.bar1 };
+    config.bar1 = { ...config.bar2 };
+    config.bar2 = tempBar1;
+
+    // Swap legend labels
+    const tempLabel = config.legend.bar1Label;
+    config.legend.bar1Label = config.legend.bar2Label;
+    config.legend.bar2Label = tempLabel;
+
+    // Repopulate form with swapped values
+    populateForm();
+    updateFieldLabels();
+
+    // Show feedback
+    const btn = elements.swapBarsBtn;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Swapped!';
+    btn.style.color = 'var(--success)';
+
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.color = '';
+    }, 1500);
+  }
+
+  /**
+   * Update bar 1 border options visibility
+   */
+  function updateBar1BorderVisibility() {
+    if (elements.bar1BorderOptions && elements.bar1ShowBorder) {
+      elements.bar1BorderOptions.style.display = elements.bar1ShowBorder.checked ? 'flex' : 'none';
+    }
+  }
+
+  /**
+   * Update bar 2 border options visibility
+   */
+  function updateBar2BorderVisibility() {
+    if (elements.bar2BorderOptions && elements.bar2ShowBorder) {
+      elements.bar2BorderOptions.style.display = elements.bar2ShowBorder.checked ? 'flex' : 'none';
+    }
+  }
+
+  /**
+   * Update font preview
+   */
+  function updateFontPreview() {
+    const preview = elements.fontPreview;
+    if (!preview) return;
+
+    const font = config.font || {};
+    preview.style.fontFamily = font.family || 'system-ui, sans-serif';
+
+    const titleEl = preview.querySelector('.preview-title');
+    const labelEl = preview.querySelector('.preview-label');
+
+    if (titleEl) titleEl.style.fontWeight = font.titleWeight || 600;
+    if (labelEl) labelEl.style.fontWeight = font.labelWeight || 400;
+  }
+
+  /**
+   * Preview animation - triggers re-render of actual chart
+   */
+  async function previewAnimation() {
+    const btn = elements.previewAnimation;
+    const originalText = btn.innerHTML;
+
+    // Update button state
+    btn.style.transform = 'scale(0.95)';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Previewing...';
+
+    const duration = config.animation?.duration || 500;
+
+    try {
+      // Set flag to force full animation on next render
+      config.forceAnimationPreview = true;
+
+      // Save config to trigger chart update
+      tableau.extensions.settings.set('comboChartConfig', JSON.stringify(config));
+      await tableau.extensions.settings.saveAsync();
+
+      // Clear the flag after a short delay
+      setTimeout(async () => {
+        config.forceAnimationPreview = false;
+        tableau.extensions.settings.set('comboChartConfig', JSON.stringify(config));
+        await tableau.extensions.settings.saveAsync();
+      }, duration + 100);
+
+      // Reset button after animation completes
+      setTimeout(() => {
+        btn.style.transform = 'scale(1)';
+        btn.innerHTML = originalText;
+      }, duration + 200);
+
+    } catch (error) {
+      console.error('Error previewing animation:', error);
+      btn.style.transform = 'scale(1)';
+      btn.innerHTML = originalText;
+    }
+  }
+
+  /**
+   * Get CSS easing equivalent
+   */
+  function getEasingCSS(easing) {
+    const map = {
+      'easeLinear': 'linear',
+      'easeCubicOut': 'cubic-bezier(0.33, 1, 0.68, 1)',
+      'easeCubicInOut': 'cubic-bezier(0.65, 0, 0.35, 1)',
+      'easeQuad': 'cubic-bezier(0.5, 1, 0.89, 1)',
+      'easeBack': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      'easeElastic': 'cubic-bezier(0.68, -0.6, 0.32, 1.6)',
+      'easeBounce': 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+    };
+    return map[easing] || 'ease-out';
+  }
+
+  /**
+   * Validate configuration
+   */
+  function validate() {
+    const errors = [];
+
+    if (!config.dimension) errors.push('Please select a dimension');
+    if (!config.bar1Measure) errors.push('Please select Bar 1 measure');
+    if (!config.bar2Measure) errors.push('Please select Bar 2 measure');
+    if (!config.lineMeasure) errors.push('Please select Line measure');
+
+    return errors;
+  }
+
+  /**
+   * Save configuration and close dialog
+   */
+  async function saveAndClose() {
+    const errors = validate();
+
+    if (errors.length > 0) {
+      alert('Please fix the following errors:\n\n' + errors.join('\n'));
+      return;
+    }
+
+    try {
+      tableau.extensions.settings.set('comboChartConfig', JSON.stringify(config));
+      await tableau.extensions.settings.saveAsync();
+      tableau.extensions.ui.closeDialog('saved');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    }
+  }
+
+  /**
+   * Close dialog without saving
+   */
+  function closeDialog() {
+    tableau.extensions.ui.closeDialog('cancelled');
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

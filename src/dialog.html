@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configure Combo Chart</title>
+
+  <!-- Tableau Extensions API (local copy) -->
+  <script src="lib/tableau.extensions.min.js"></script>
+
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/dialog.css">
+</head>
+<body class="dialog-body">
+  <div class="dialog-container">
+    <header class="dialog-header">
+      <h1>Chart Configuration</h1>
+      <span class="dialog-header-subtitle">Combo Chart Extension</span>
+    </header>
+
+    <div class="dialog-content">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button type="button" class="tab-btn active" data-tab="data">Data</button>
+        <button type="button" class="tab-btn" data-tab="theme">Theme</button>
+        <button type="button" class="tab-btn" data-tab="bars">Bars</button>
+        <button type="button" class="tab-btn" data-tab="line">Line</button>
+        <button type="button" class="tab-btn" data-tab="axes">Axes</button>
+        <button type="button" class="tab-btn" data-tab="labels">Labels</button>
+        <button type="button" class="tab-btn" data-tab="tooltip">Tooltip</button>
+      </div>
+
+      <!-- Data Tab -->
+      <div class="tab-content active" id="tab-data">
+        <section class="config-section">
+          <h3>Data Source</h3>
+          <div class="form-group">
+            <label for="worksheet-select">Select Worksheet</label>
+            <select id="worksheet-select" class="form-control">
+              <option value="">-- Select Worksheet --</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Dimension</h3>
+          <div class="form-group">
+            <label for="dimension-select">Category (X-Axis)</label>
+            <select id="dimension-select" class="form-control">
+              <option value="">-- Select Dimension --</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Measures</h3>
+          <div class="form-group">
+            <label for="bar1-measure">Bar 1 Measure</label>
+            <select id="bar1-measure" class="form-control">
+              <option value="">-- Select Measure --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bar2-measure">Bar 2 Measure</label>
+            <select id="bar2-measure" class="form-control">
+              <option value="">-- Select Measure --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="line-measure">Line Measure</label>
+            <select id="line-measure" class="form-control">
+              <option value="">-- Select Measure --</option>
+            </select>
+          </div>
+        </section>
+      </div>
+
+      <!-- Theme Tab -->
+      <div class="tab-content" id="tab-theme">
+        <section class="config-section">
+          <h3>Color Palette</h3>
+          <p class="help-text">Choose a preset color palette or customize individual colors in the Bars/Line tabs.</p>
+          <div id="color-palettes" class="palette-grid">
+            <!-- Palettes will be populated by JavaScript -->
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Animation</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="animation-enabled" checked>
+              <span>Enable Animations</span>
+            </label>
+          </div>
+          <div id="animation-options">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="animation-duration">Duration (ms)</label>
+                <input type="range" id="animation-duration" min="100" max="2000" step="100" value="500" class="form-range">
+                <span id="animation-duration-value">500</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="animation-easing">Easing Function</label>
+              <select id="animation-easing" class="form-control">
+                <option value="easeCubicOut">Smooth (Cubic Out)</option>
+                <option value="easeLinear">Linear</option>
+                <option value="easeCubicInOut">Cubic In-Out</option>
+                <option value="easeQuad">Quadratic</option>
+                <option value="easeBack">Back (Overshoot)</option>
+                <option value="easeElastic">Elastic</option>
+                <option value="easeBounce">Bounce</option>
+              </select>
+            </div>
+            <div class="animation-preview">
+              <button type="button" id="preview-animation" class="btn btn-secondary btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Preview Animation
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Typography</h3>
+          <div class="form-group">
+            <label for="font-family">Default Font Family</label>
+            <select id="font-family" class="form-control">
+              <option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">System Default</option>
+              <option value="'Tableau Book', 'Tableau Regular', Arial, sans-serif">Tableau</option>
+              <option value="'Segoe UI', Tahoma, Geneva, sans-serif">Segoe UI</option>
+              <option value="Arial, Helvetica, sans-serif">Arial</option>
+              <option value="'Helvetica Neue', Helvetica, Arial, sans-serif">Helvetica</option>
+              <option value="Roboto, 'Helvetica Neue', sans-serif">Roboto</option>
+              <option value="'Open Sans', sans-serif">Open Sans</option>
+              <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+              <option value="Lato, sans-serif">Lato</option>
+              <option value="'Inter', sans-serif">Inter</option>
+              <option value="Georgia, 'Times New Roman', serif">Georgia (Serif)</option>
+              <option value="'Courier New', Courier, monospace">Courier New (Monospace)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="title-weight">Title Weight</label>
+              <select id="title-weight" class="form-control">
+                <option value="400">Normal (400)</option>
+                <option value="500">Medium (500)</option>
+                <option value="600" selected>Semi-Bold (600)</option>
+                <option value="700">Bold (700)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="label-weight">Label Weight</label>
+              <select id="label-weight" class="form-control">
+                <option value="300">Light (300)</option>
+                <option value="400" selected>Normal (400)</option>
+                <option value="500">Medium (500)</option>
+                <option value="600">Semi-Bold (600)</option>
+              </select>
+            </div>
+          </div>
+          <div class="font-preview" id="font-preview">
+            <div class="preview-title">Preview Title</div>
+            <div class="preview-label">Axis labels and legend text</div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Dashboard Controls</h3>
+          <p class="help-text">Control visibility of header buttons when embedded in a dashboard.</p>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-legend-toggle" checked>
+              <span>Show Legend Toggle Button</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-settings-cog" checked>
+              <span>Show Settings Button</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Dialog Appearance</h3>
+          <p class="help-text">Customize the appearance of this settings dialog.</p>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-section-dividers" checked>
+              <span>Show Section Dividers</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="compact-mode">
+              <span>Compact Mode</span>
+            </label>
+            <p class="help-text">Reduce spacing for a more compact layout.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- Bars Tab -->
+      <div class="tab-content" id="tab-bars">
+        <section class="config-section">
+          <h3>Bar Layout</h3>
+          <div class="form-group">
+            <label>Bar Style</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="bar-style" value="grouped" checked>
+                <span>Grouped (Side-by-side)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="bar-style" value="stacked">
+                <span>Stacked</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="bar-padding">Bar Padding</label>
+            <input type="range" id="bar-padding" min="0" max="0.5" step="0.05" value="0.2" class="form-range">
+            <span id="bar-padding-value">0.2</span>
+          </div>
+          <div class="form-group">
+            <button type="button" id="swap-bars-btn" class="btn btn-secondary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+              </svg>
+              Swap Bar 1 &amp; Bar 2
+            </button>
+            <p class="help-text">Swaps the data fields, colors, and all styling between Bar 1 and Bar 2.</p>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Bar 1 Style</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bar1-color">Color</label>
+              <input type="color" id="bar1-color" value="#4e79a7" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="bar1-opacity">Opacity</label>
+              <input type="range" id="bar1-opacity" min="0" max="1" step="0.1" value="1" class="form-range">
+              <span id="bar1-opacity-value">1</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="bar1-show-border" checked>
+              <span>Show Border</span>
+            </label>
+          </div>
+          <div class="form-row" id="bar1-border-options">
+            <div class="form-group">
+              <label for="bar1-border-color">Border Color</label>
+              <input type="color" id="bar1-border-color" value="#3a5f80" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="bar1-border-width">Border Width</label>
+              <input type="number" id="bar1-border-width" min="0" max="5" value="1" class="form-control small">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="bar1-corner-radius">Corner Radius</label>
+            <input type="range" id="bar1-corner-radius" min="0" max="10" step="1" value="2" class="form-range">
+            <span id="bar1-corner-radius-value">2</span>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Bar 2 Style</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bar2-color">Color</label>
+              <input type="color" id="bar2-color" value="#f28e2c" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="bar2-opacity">Opacity</label>
+              <input type="range" id="bar2-opacity" min="0" max="1" step="0.1" value="1" class="form-range">
+              <span id="bar2-opacity-value">1</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="bar2-show-border" checked>
+              <span>Show Border</span>
+            </label>
+          </div>
+          <div class="form-row" id="bar2-border-options">
+            <div class="form-group">
+              <label for="bar2-border-color">Border Color</label>
+              <input type="color" id="bar2-border-color" value="#c47223" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="bar2-border-width">Border Width</label>
+              <input type="number" id="bar2-border-width" min="0" max="5" value="1" class="form-control small">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="bar2-corner-radius">Corner Radius</label>
+            <input type="range" id="bar2-corner-radius" min="0" max="10" step="1" value="2" class="form-range">
+            <span id="bar2-corner-radius-value">2</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- Line Tab -->
+      <div class="tab-content" id="tab-line">
+        <section class="config-section">
+          <h3>Line Style</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="line-color">Color</label>
+              <input type="color" id="line-color" value="#e15759" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="line-opacity">Opacity</label>
+              <input type="range" id="line-opacity" min="0" max="1" step="0.1" value="1" class="form-range">
+              <span id="line-opacity-value">1</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="line-width">Line Width</label>
+              <input type="number" id="line-width" min="1" max="10" value="2" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="line-style">Line Style</label>
+              <select id="line-style" class="form-control">
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="line-curve">Curve Type</label>
+            <select id="line-curve" class="form-control">
+              <option value="linear">Linear</option>
+              <option value="monotone">Monotone</option>
+              <option value="cardinal">Cardinal</option>
+              <option value="step">Step</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Data Points</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-points" checked>
+              <span>Show Data Points</span>
+            </label>
+          </div>
+          <div class="form-row" id="points-options">
+            <div class="form-group">
+              <label for="point-size">Point Size</label>
+              <input type="number" id="point-size" min="2" max="15" value="5" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="point-shape">Point Shape</label>
+              <select id="point-shape" class="form-control">
+                <option value="circle">Circle</option>
+                <option value="square">Square</option>
+                <option value="diamond">Diamond</option>
+                <option value="triangle">Triangle</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" id="points-color-options">
+            <div class="form-group">
+              <label for="point-fill">Fill Color</label>
+              <input type="color" id="point-fill" value="#e15759" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="point-stroke">Stroke Color</label>
+              <input type="color" id="point-stroke" value="#ffffff" class="form-color">
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Axes Tab -->
+      <div class="tab-content" id="tab-axes">
+        <section class="config-section">
+          <h3>Axis Configuration</h3>
+          <div class="form-group">
+            <label>Y-Axis Mode</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="axis-mode" value="dual" checked>
+                <span>Dual Axis (Line on right)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="axis-mode" value="shared">
+                <span>Shared Axis</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group" id="sync-axis-option">
+            <label class="checkbox-label">
+              <input type="checkbox" id="sync-dual-axis">
+              <span>Synchronize Dual Axis</span>
+            </label>
+            <p class="help-text">When enabled, both Y-axes will share the same scale range.</p>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>X-Axis</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="x-axis-show" checked>
+              <span>Show X-Axis</span>
+            </label>
+          </div>
+          <div class="form-row compact-toggles">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="x-axis-show-title" checked>
+                <span>Title</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="x-axis-show-labels" checked>
+                <span>Labels</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="x-axis-show-ticks" checked>
+                <span>Ticks</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="x-axis-show-line" checked>
+                <span>Line</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="x-axis-title">Axis Title</label>
+            <input type="text" id="x-axis-title" class="form-control" placeholder="Auto">
+          </div>
+          <div class="form-group">
+            <label for="x-axis-font-family">Font</label>
+            <select id="x-axis-font-family" class="form-control font-select"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="x-axis-font-size">Size</label>
+              <input type="number" id="x-axis-font-size" min="8" max="24" value="12" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="x-axis-font-weight">Weight</label>
+              <select id="x-axis-font-weight" class="form-control">
+                <option value="400" selected>Normal</option>
+                <option value="500">Medium</option>
+                <option value="600">Semi-Bold</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="x-axis-font-color">Label Color</label>
+              <input type="color" id="x-axis-font-color" value="#666666" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="x-axis-line-color">Tick/Line Color</label>
+              <input type="color" id="x-axis-line-color" value="#999999" class="form-color">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="x-axis-rotation">Label Rotation</label>
+            <select id="x-axis-rotation" class="form-control">
+              <option value="0">Horizontal (0°)</option>
+              <option value="-45">Diagonal (-45°)</option>
+              <option value="-90">Vertical (-90°)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="x-axis-align">Label Alignment</label>
+              <select id="x-axis-align" class="form-control">
+                <option value="center">Center</option>
+                <option value="start">Left</option>
+                <option value="end">Right</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="x-axis-sort">Sort Order</label>
+              <select id="x-axis-sort" class="form-control">
+                <option value="default">Default (Data Order)</option>
+                <option value="asc">Ascending (A-Z)</option>
+                <option value="desc">Descending (Z-A)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="x-axis-max-width">Max Label Width</label>
+            <select id="x-axis-max-width" class="form-control">
+              <option value="none">No Limit</option>
+              <option value="50">50px (Truncate)</option>
+              <option value="80">80px (Truncate)</option>
+              <option value="120">120px (Truncate)</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Left Y-Axis (Bars)</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="y-axis-left-show" checked>
+              <span>Show Left Y-Axis</span>
+            </label>
+          </div>
+          <div class="form-row compact-toggles">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-left-show-title" checked>
+                <span>Title</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-left-show-labels" checked>
+                <span>Labels</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-left-show-ticks" checked>
+                <span>Ticks</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-left-show-line" checked>
+                <span>Line</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="y-axis-left-title">Axis Title</label>
+            <input type="text" id="y-axis-left-title" class="form-control" placeholder="Auto">
+          </div>
+          <div class="form-group">
+            <label for="y-axis-font-family">Font</label>
+            <select id="y-axis-font-family" class="form-control font-select"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="y-axis-font-size">Size</label>
+              <input type="number" id="y-axis-font-size" min="8" max="24" value="12" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="y-axis-font-weight">Weight</label>
+              <select id="y-axis-font-weight" class="form-control">
+                <option value="400" selected>Normal</option>
+                <option value="500">Medium</option>
+                <option value="600">Semi-Bold</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="y-axis-font-color">Label Color</label>
+              <input type="color" id="y-axis-font-color" value="#666666" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="y-axis-line-color">Tick/Line Color</label>
+              <input type="color" id="y-axis-line-color" value="#999999" class="form-color">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="y-axis-left-min">Min Value</label>
+              <input type="number" id="y-axis-left-min" class="form-control small" placeholder="Auto">
+            </div>
+            <div class="form-group">
+              <label for="y-axis-left-max">Max Value</label>
+              <input type="number" id="y-axis-left-max" class="form-control small" placeholder="Auto">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="y-axis-left-format">Number Format</label>
+            <select id="y-axis-left-format" class="form-control">
+              <option value="auto">Auto</option>
+              <option value="number">Number (1,234)</option>
+              <option value="currency">Currency ($1,234)</option>
+              <option value="percent">Percent (12.34%)</option>
+              <option value="compact">Compact (1.2K)</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="config-section" id="y-axis-right-section">
+          <h3>Right Y-Axis (Line)</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="y-axis-right-show" checked>
+              <span>Show Right Y-Axis</span>
+            </label>
+          </div>
+          <div class="form-row compact-toggles">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-right-show-title" checked>
+                <span>Title</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-right-show-labels" checked>
+                <span>Labels</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-right-show-ticks" checked>
+                <span>Ticks</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="y-axis-right-show-line" checked>
+                <span>Line</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="y-axis-right-title">Axis Title</label>
+            <input type="text" id="y-axis-right-title" class="form-control" placeholder="Auto">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="y-axis-right-min">Min Value</label>
+              <input type="number" id="y-axis-right-min" class="form-control small" placeholder="Auto">
+            </div>
+            <div class="form-group">
+              <label for="y-axis-right-max">Max Value</label>
+              <input type="number" id="y-axis-right-max" class="form-control small" placeholder="Auto">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="y-axis-right-format">Number Format</label>
+            <select id="y-axis-right-format" class="form-control">
+              <option value="auto">Auto</option>
+              <option value="number">Number (1,234)</option>
+              <option value="currency">Currency ($1,234)</option>
+              <option value="percent">Percent (12.34%)</option>
+              <option value="compact">Compact (1.2K)</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Grid Lines</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="grid-horizontal" checked>
+              <span>Show Horizontal Grid Lines</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="grid-vertical">
+              <span>Show Vertical Grid Lines</span>
+            </label>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="grid-color">Grid Color</label>
+              <input type="color" id="grid-color" value="#e0e0e0" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="grid-opacity">Grid Opacity</label>
+              <input type="range" id="grid-opacity" min="0" max="1" step="0.1" value="0.5" class="form-range">
+              <span id="grid-opacity-value">0.5</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Labels Tab -->
+      <div class="tab-content" id="tab-labels">
+        <section class="config-section">
+          <h3>Chart Title</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-title" checked>
+              <span>Show Title</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="chart-title">Title Text</label>
+            <input type="text" id="chart-title" class="form-control" placeholder="Combo Chart">
+          </div>
+          <div class="form-group">
+            <label for="title-font-family">Font</label>
+            <select id="title-font-family" class="form-control font-select"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="title-font-size">Size</label>
+              <input type="number" id="title-font-size" min="12" max="36" value="18" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="title-font-weight">Weight</label>
+              <select id="title-font-weight" class="form-control">
+                <option value="400">Normal</option>
+                <option value="500">Medium</option>
+                <option value="600" selected>Semi-Bold</option>
+                <option value="700">Bold</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="title-color">Text Color</label>
+              <input type="color" id="title-color" value="#333333" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="title-bg-color">Background</label>
+              <input type="color" id="title-bg-color" value="#ffffff" class="form-color">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label format-option">
+                <input type="checkbox" id="title-italic">
+                <span class="format-icon" title="Italic"><i>I</i></span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="title-bg-transparent" checked>
+              <span>Transparent Background</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Bar Labels</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-bar-labels">
+              <span>Show Bar Value Labels</span>
+            </label>
+          </div>
+          <div id="bar-labels-options">
+            <div class="form-group">
+              <label for="bar-label-position">Position</label>
+              <select id="bar-label-position" class="form-control">
+                <option value="top">Above Bar</option>
+                <option value="inside">Inside Bar (Top)</option>
+                <option value="center">Center of Bar</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bar-label-offset-x">Horizontal Offset</label>
+                <input type="number" id="bar-label-offset-x" min="-50" max="50" value="0" class="form-control small">
+              </div>
+              <div class="form-group">
+                <label for="bar-label-offset-y">Vertical Offset</label>
+                <input type="number" id="bar-label-offset-y" min="-50" max="50" value="0" class="form-control small">
+              </div>
+            </div>
+
+            <div class="subsection-header">
+              <span class="subsection-title">Bar 1 Labels</span>
+            </div>
+            <div class="form-group">
+              <label for="bar1-label-font-family">Font</label>
+              <select id="bar1-label-font-family" class="form-control font-select"></select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bar1-label-font-size">Size</label>
+                <input type="number" id="bar1-label-font-size" min="8" max="18" value="10" class="form-control small">
+              </div>
+              <div class="form-group">
+                <label for="bar1-label-font-weight">Weight</label>
+                <select id="bar1-label-font-weight" class="form-control">
+                  <option value="400" selected>Normal</option>
+                  <option value="500">Medium</option>
+                  <option value="600">Semi-Bold</option>
+                  <option value="700">Bold</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bar1-label-color">Color</label>
+                <input type="color" id="bar1-label-color" value="#333333" class="form-color">
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label format-option">
+                  <input type="checkbox" id="bar1-label-italic">
+                  <span class="format-icon" title="Italic"><i>I</i></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="subsection-header">
+              <span class="subsection-title">Bar 2 Labels</span>
+            </div>
+            <div class="form-group">
+              <label for="bar2-label-font-family">Font</label>
+              <select id="bar2-label-font-family" class="form-control font-select"></select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bar2-label-font-size">Size</label>
+                <input type="number" id="bar2-label-font-size" min="8" max="18" value="10" class="form-control small">
+              </div>
+              <div class="form-group">
+                <label for="bar2-label-font-weight">Weight</label>
+                <select id="bar2-label-font-weight" class="form-control">
+                  <option value="400" selected>Normal</option>
+                  <option value="500">Medium</option>
+                  <option value="600">Semi-Bold</option>
+                  <option value="700">Bold</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bar2-label-color">Color</label>
+                <input type="color" id="bar2-label-color" value="#333333" class="form-color">
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label format-option">
+                  <input type="checkbox" id="bar2-label-italic">
+                  <span class="format-icon" title="Italic"><i>I</i></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Line Labels</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-line-labels">
+              <span>Show Line Value Labels</span>
+            </label>
+          </div>
+          <div id="line-labels-options">
+            <div class="form-group">
+              <label for="line-label-position">Position</label>
+              <select id="line-label-position" class="form-control">
+                <option value="top">Above Point</option>
+                <option value="bottom">Below Point</option>
+                <option value="left">Left of Point</option>
+                <option value="right">Right of Point</option>
+                <option value="center">Center (on Point)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="line-label-offset-x">Horizontal Offset</label>
+                <input type="number" id="line-label-offset-x" min="-50" max="50" value="0" class="form-control small">
+              </div>
+              <div class="form-group">
+                <label for="line-label-offset-y">Vertical Offset</label>
+                <input type="number" id="line-label-offset-y" min="-50" max="50" value="0" class="form-control small">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="line-label-font-family">Font</label>
+              <select id="line-label-font-family" class="form-control font-select"></select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="line-label-font-size">Size</label>
+                <input type="number" id="line-label-font-size" min="8" max="18" value="10" class="form-control small">
+              </div>
+              <div class="form-group">
+                <label for="line-label-font-weight">Weight</label>
+                <select id="line-label-font-weight" class="form-control">
+                  <option value="400" selected>Normal</option>
+                  <option value="500">Medium</option>
+                  <option value="600">Semi-Bold</option>
+                  <option value="700">Bold</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="line-label-color">Color</label>
+                <input type="color" id="line-label-color" value="#333333" class="form-color">
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label format-option">
+                  <input type="checkbox" id="line-label-italic">
+                  <span class="format-icon" title="Italic"><i>I</i></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Legend</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-legend" checked>
+              <span>Show Legend</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="legend-position">Position</label>
+            <select id="legend-position" class="form-control">
+              <option value="bottom">Bottom</option>
+              <option value="top">Top</option>
+              <option value="right">Right</option>
+              <option value="left">Left</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="legend-font-family">Font</label>
+            <select id="legend-font-family" class="form-control font-select"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="legend-font-size">Size</label>
+              <input type="number" id="legend-font-size" min="8" max="18" value="12" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="legend-font-weight">Weight</label>
+              <select id="legend-font-weight" class="form-control">
+                <option value="400" selected>Normal</option>
+                <option value="500">Medium</option>
+                <option value="600">Semi-Bold</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="legend-font-color">Text Color</label>
+              <input type="color" id="legend-font-color" value="#333333" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="legend-bg-color">Background</label>
+              <input type="color" id="legend-bg-color" value="#f8fafc" class="form-color">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label format-option">
+                <input type="checkbox" id="legend-italic">
+                <span class="format-icon" title="Italic"><i>I</i></span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="legend-bg-transparent">
+              <span>Transparent Background</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Custom Legend Labels</h3>
+          <p class="help-text">Override the default measure names shown in the legend.</p>
+          <div class="form-group">
+            <label for="legend-bar1-label">Bar 1 Label</label>
+            <input type="text" id="legend-bar1-label" class="form-control" placeholder="Auto (use measure name)">
+          </div>
+          <div class="form-group">
+            <label for="legend-bar2-label">Bar 2 Label</label>
+            <input type="text" id="legend-bar2-label" class="form-control" placeholder="Auto (use measure name)">
+          </div>
+          <div class="form-group">
+            <label for="legend-line-label">Line Label</label>
+            <input type="text" id="legend-line-label" class="form-control" placeholder="Auto (use measure name)">
+          </div>
+        </section>
+      </div>
+
+      <!-- Tooltip Tab -->
+      <div class="tab-content" id="tab-tooltip">
+        <section class="config-section">
+          <h3>Tooltip Settings</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-tooltip" checked>
+              <span>Show Tooltips</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Tooltip Content</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="tooltip-show-dimension" checked>
+              <span>Show Dimension Value</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="tooltip-show-measure-name" checked>
+              <span>Show Measure Name</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="tooltip-show-value" checked>
+              <span>Show Value</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h3>Tooltip Style</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tooltip-bg-color">Background</label>
+              <input type="color" id="tooltip-bg-color" value="#333333" class="form-color">
+            </div>
+            <div class="form-group">
+              <label for="tooltip-text-color">Text Color</label>
+              <input type="color" id="tooltip-text-color" value="#ffffff" class="form-color">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="tooltip-font-family">Font</label>
+            <select id="tooltip-font-family" class="form-control font-select"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tooltip-font-size">Size</label>
+              <input type="number" id="tooltip-font-size" min="10" max="16" value="12" class="form-control small">
+            </div>
+            <div class="form-group">
+              <label for="tooltip-font-weight">Weight</label>
+              <select id="tooltip-font-weight" class="form-control">
+                <option value="400" selected>Normal</option>
+                <option value="500">Medium</option>
+                <option value="600">Semi-Bold</option>
+              </select>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer class="dialog-footer">
+      <div class="footer-left">
+        <button type="button" id="reset-btn" class="btn btn-reset" title="Reset all settings to defaults">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+          Reset
+        </button>
+      </div>
+      <div class="footer-right">
+        <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="apply-btn" class="btn btn-secondary">Apply</button>
+        <button type="button" id="save-btn" class="btn btn-primary">Save &amp; Close</button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="js/dialogConfig.js"></script>
+</body>
+</html>
