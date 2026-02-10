@@ -639,15 +639,22 @@
   async function getSystemFonts() {
     if (systemFontsCache) return systemFontsCache;
 
-    // Try the Local Font Access API (Chrome 103+)
+    // Try the Local Font Access API (Chrome 103+) with timeout
     try {
       if (window.queryLocalFonts) {
-        const fonts = await window.queryLocalFonts();
-        if (fonts && fonts.length > 0) {
+        console.log('Trying Local Font Access API...');
+        // Timeout after 2s - queryLocalFonts can hang in sandboxed webviews
+        const fonts = await Promise.race([
+          window.queryLocalFonts(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+        ]);
+        const fontArray = Array.isArray(fonts) ? fonts : (fonts ? Array.from(fonts) : []);
+        console.log('queryLocalFonts returned:', fontArray.length, 'entries');
+        if (fontArray.length > 0) {
           const familySet = new Set();
           const systemFonts = [];
 
-          fonts.forEach(font => {
+          fontArray.forEach(font => {
             const family = font.family;
             if (!familySet.has(family)) {
               familySet.add(family);
@@ -667,12 +674,12 @@
         console.log('Local Font Access API returned empty result, using fallback');
       }
     } catch (e) {
-      console.log('Local Font Access API not available:', e.message);
+      console.log('Local Font Access API unavailable/timeout:', e.message);
     }
 
     // Fallback: show all common fonts
     systemFontsCache = fallbackFontFamilies;
-    console.log(`Font fallback list: ${fallbackFontFamilies.length} fonts`);
+    console.log(`Using fallback font list: ${fallbackFontFamilies.length} fonts`);
     return fallbackFontFamilies;
   }
 
@@ -853,10 +860,16 @@
    */
   async function initFontSelects() {
     const fontSelects = document.querySelectorAll('.font-select');
-    const detectedFont = detectSystemFont();
-    const systemFonts = await getSystemFonts();
+    console.log('initFontSelects: found', fontSelects.length, 'font-select elements');
 
-    fontSelects.forEach(select => {
+    const detectedFont = detectSystemFont();
+    console.log('initFontSelects: detected font =', detectedFont.label, '| primary =', detectedFont.primary);
+
+    const systemFonts = await getSystemFonts();
+    console.log('initFontSelects: got', systemFonts.length, 'system fonts');
+
+    let addedCount = 0;
+    fontSelects.forEach((select, idx) => {
       select.innerHTML = '';
 
       // Add detected font as first option with appropriate label
@@ -879,9 +892,11 @@
       select.appendChild(separator);
 
       // Add all system/available fonts
+      let fontsAdded = 0;
       systemFonts.forEach(font => {
         // Skip if this is the same as the detected font
-        if (font.primary.toLowerCase() === detectedFont.primary.toLowerCase()) {
+        if (font.primary && detectedFont.primary &&
+            font.primary.toLowerCase() === detectedFont.primary.toLowerCase()) {
           return;
         }
 
@@ -890,12 +905,19 @@
         option.textContent = font.label;
         option.style.fontFamily = font.value;
         select.appendChild(option);
+        fontsAdded++;
       });
+
+      if (idx === 0) {
+        addedCount = fontsAdded;
+        console.log('initFontSelects: added', fontsAdded, 'font options to first select (' + select.id + ')');
+        console.log('initFontSelects: total options in select:', select.options.length);
+      }
     });
 
-    console.log('Font selects initialized. Detected font:', detectedFont.label,
-      detectedFont.isWorkbookFont ? '(from workbook)' : '(system default)',
-      '| Total fonts:', systemFonts.length);
+    console.log('Font selects initialized. Detected:', detectedFont.label,
+      detectedFont.isWorkbookFont ? '(workbook)' : '(system)',
+      '| Fonts available:', systemFonts.length, '| Added per select:', addedCount);
   }
 
   /**
