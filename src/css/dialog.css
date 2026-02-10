@@ -396,12 +396,20 @@ select.form-control option {
   background-image: none !important;
   -webkit-appearance: none;
   -moz-appearance: none;
+  appearance: none;
 }
 
 select.form-control option:checked,
 select.form-control option:hover {
   background: var(--primary-50);
   background-image: none !important;
+}
+
+/* Ensure dropdown doesn't show options inline */
+select.form-control:not([multiple]):not([size]) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Color Input - Modern Style */

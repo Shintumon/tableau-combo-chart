@@ -639,7 +639,7 @@
    */
   function populateFieldSelects() {
     // Dimension select
-    elements.dimensionSelect.innerHTML = '<option value="">-- Select Dimension --</option>';
+    elements.dimensionSelect.innerHTML = '<option value="">Select Dimension</option>';
     columns.dimensions.forEach(dim => {
       const option = document.createElement('option');
       option.value = dim.fieldName;
@@ -650,7 +650,7 @@
     // Measure selects
     const measureSelects = [elements.bar1Measure, elements.bar2Measure, elements.lineMeasure];
     measureSelects.forEach(select => {
-      select.innerHTML = '<option value="">-- Select Measure --</option>';
+      select.innerHTML = '<option value="">Select Measure</option>';
       columns.measures.forEach(measure => {
         const option = document.createElement('option');
         option.value = measure.fieldName;
@@ -1605,11 +1605,28 @@
       document.body.classList.toggle('compact-mode', e.target.checked);
     });
 
-    // Buttons
-    safeAddListener(elements.cancelBtn, 'click', closeDialog);
-    safeAddListener(elements.applyBtn, 'click', applyChanges);
-    safeAddListener(elements.saveBtn, 'click', saveAndClose);
-    safeAddListener(elements.resetBtn, 'click', resetToDefaults);
+    // Buttons - use direct getElementById as fallback for reliability
+    const cancelBtn = elements.cancelBtn || document.getElementById('cancel-btn');
+    const applyBtn = elements.applyBtn || document.getElementById('apply-btn');
+    const saveBtn = elements.saveBtn || document.getElementById('save-btn');
+    const resetBtn = elements.resetBtn || document.getElementById('reset-btn');
+
+    if (cancelBtn) {
+      cancelBtn.onclick = closeDialog;
+      console.log('Cancel button handler attached');
+    }
+    if (applyBtn) {
+      applyBtn.onclick = applyChanges;
+      console.log('Apply button handler attached');
+    }
+    if (saveBtn) {
+      saveBtn.onclick = saveAndClose;
+      console.log('Save button handler attached');
+    }
+    if (resetBtn) {
+      resetBtn.onclick = resetToDefaults;
+      console.log('Reset button handler attached');
+    }
   }
 
   /**
