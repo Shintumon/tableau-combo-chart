@@ -81,6 +81,8 @@ const Config = {
     // Bar settings
     barStyle: 'grouped', // 'grouped' or 'stacked'
     barPadding: 0.2,
+    barGap: 4,       // px gap between bar 1 and bar 2 in grouped mode
+    barWidth: 0,     // 0 = auto (fill band), >0 = fixed px width per bar
 
     bar1: {
       color: '#4e79a7',
@@ -714,7 +716,36 @@ const Config = {
       },
       'iso': d3.timeFormat('%Y-%m-%d')
     };
-    return formatMap[format] || null;
+    if (formatMap[format]) return formatMap[format];
+    // Custom date format: convert Tableau/moment-style tokens to D3 strftime
+    if (format && format.startsWith('custom:')) {
+      const pattern = format.slice(7); // strip "custom:" prefix
+      const d3Pattern = this.tableauDateToD3(pattern);
+      return d3.timeFormat(d3Pattern);
+    }
+    return null;
+  },
+
+  /**
+   * Convert Tableau/moment-style date format tokens to D3 strftime
+   * Supports: YYYY, YY, MMMM, MMM, MM, M, DD, D, dddd, ddd, dd, d, Q
+   * Literal characters (like apostrophes, spaces, slashes) pass through unchanged
+   */
+  tableauDateToD3(pattern) {
+    // Replace tokens longest-first to avoid partial matches
+    return pattern
+      .replace(/YYYY/g, '%Y')
+      .replace(/YY/g, '%y')
+      .replace(/MMMM/g, '%B')
+      .replace(/MMM/g, '%b')
+      .replace(/MM/g, '%m')
+      .replace(/DDDD/g, '%j')
+      .replace(/DD/g, '%d')
+      .replace(/dddd/g, '%A')
+      .replace(/ddd/g, '%a')
+      .replace(/dd/g, '%a')
+      .replace(/QQ?/g, '\x00Q')  // placeholder for quarter
+      .replace(/\x00Q/g, 'Q');   // quarter not natively supported - pass through as literal Q
   },
 
   /**

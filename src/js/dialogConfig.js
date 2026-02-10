@@ -289,6 +289,8 @@
       colorPalette: 'tableau10',
       barStyle: 'grouped',
       barPadding: 0.2,
+      barGap: 4,
+      barWidth: 0,
       bar1: { color: '#4e79a7', opacity: 1, borderColor: '#3a5f80', borderWidth: 1, cornerRadius: 2 },
       bar2: { color: '#f28e2c', opacity: 1, borderColor: '#c47223', borderWidth: 1, cornerRadius: 2 },
       line: { color: '#e15759', opacity: 1, width: 2, style: 'solid', curve: 'linear' },
@@ -399,6 +401,8 @@
     // Bars tab
     elements.barPadding = document.getElementById('bar-padding');
     elements.barPaddingValue = document.getElementById('bar-padding-value');
+    elements.barGap = document.getElementById('bar-gap');
+    elements.barWidth = document.getElementById('bar-width');
     elements.bar1Color = document.getElementById('bar1-color');
     elements.bar1Opacity = document.getElementById('bar1-opacity');
     elements.bar1OpacityValue = document.getElementById('bar1-opacity-value');
@@ -536,6 +540,8 @@
     elements.xAxisCurrencySymbol = document.getElementById('x-axis-currency-symbol');
     elements.xAxisFormatOptions = document.getElementById('x-axis-format-options');
     elements.xAxisCurrencyGroup = document.getElementById('x-axis-currency-group');
+    elements.xAxisCustomDateGroup = document.getElementById('x-axis-custom-date-group');
+    elements.xAxisCustomDate = document.getElementById('x-axis-custom-date');
     elements.xAxisLabelOffsetX = document.getElementById('x-axis-label-offset-x');
     elements.xAxisLabelOffsetY = document.getElementById('x-axis-label-offset-y');
 
@@ -1337,9 +1343,11 @@
     const barStyleRadio = document.querySelector(`input[name="bar-style"][value="${config.barStyle}"]`);
     if (barStyleRadio) barStyleRadio.checked = true;
 
-    // Bar padding
+    // Bar padding and sizing
     safeSetValue(elements.barPadding, config.barPadding);
     safeSetText(elements.barPaddingValue, config.barPadding);
+    safeSetValue(elements.barGap, config.barGap !== undefined ? config.barGap : 4);
+    safeSetValue(elements.barWidth, config.barWidth || 0);
 
     // Bar 1 settings
     safeSetValue(elements.bar1Color, config.bar1.color);
@@ -1402,10 +1410,19 @@
     safeSetValue(elements.xAxisAlign, config.xAxis.align || 'center');
     safeSetValue(elements.xAxisSort, config.xAxis.sort || 'default');
     safeSetValue(elements.xAxisMaxWidth, config.xAxis.maxWidth || 'none');
-    safeSetValue(elements.xAxisFormat, config.xAxis.format || 'auto');
+    // Handle custom date format
+    const xFormat = config.xAxis.format || 'auto';
+    if (xFormat.startsWith('custom:')) {
+      safeSetValue(elements.xAxisFormat, 'custom-date');
+      safeSetValue(elements.xAxisCustomDate, xFormat.slice(7));
+      if (elements.xAxisCustomDateGroup) elements.xAxisCustomDateGroup.style.display = 'block';
+    } else {
+      safeSetValue(elements.xAxisFormat, xFormat);
+      if (elements.xAxisCustomDateGroup) elements.xAxisCustomDateGroup.style.display = 'none';
+    }
     safeSetValue(elements.xAxisDecimals, config.xAxis.decimals || 0);
     safeSetValue(elements.xAxisCurrencySymbol, config.xAxis.currencySymbol || '$');
-    updateFormatOptionsVisibility('x-axis', config.xAxis.format || 'auto');
+    updateFormatOptionsVisibility('x-axis', xFormat);
     safeSetValue(elements.xAxisLabelOffsetX, config.xAxis.labelOffsetX || 0);
     safeSetValue(elements.xAxisLabelOffsetY, config.xAxis.labelOffsetY || 0);
 
@@ -1649,6 +1666,8 @@
 
     // Range inputs with value display
     setupRangeInput(elements.barPadding, elements.barPaddingValue, (v) => config.barPadding = parseFloat(v));
+    safeAddListener(elements.barGap, 'input', (e) => config.barGap = parseInt(e.target.value) || 0);
+    safeAddListener(elements.barWidth, 'input', (e) => config.barWidth = parseInt(e.target.value) || 0);
     setupRangeInput(elements.bar1Opacity, elements.bar1OpacityValue, (v) => config.bar1.opacity = parseFloat(v));
     setupRangeInput(elements.bar1CornerRadius, elements.bar1CornerRadiusValue, (v) => config.bar1.cornerRadius = parseInt(v));
     setupRangeInput(elements.bar2Opacity, elements.bar2OpacityValue, (v) => config.bar2.opacity = parseFloat(v));
@@ -1933,8 +1952,23 @@
     }
     if (elements.xAxisFormat) {
       elements.xAxisFormat.addEventListener('change', (e) => {
-        config.xAxis.format = e.target.value;
-        updateFormatOptionsVisibility('x-axis', e.target.value);
+        const val = e.target.value;
+        if (val === 'custom-date') {
+          // Show custom date input; use pattern from input or default
+          if (elements.xAxisCustomDateGroup) elements.xAxisCustomDateGroup.style.display = 'block';
+          const pattern = elements.xAxisCustomDate ? elements.xAxisCustomDate.value : '';
+          config.xAxis.format = pattern ? 'custom:' + pattern : 'auto';
+        } else {
+          if (elements.xAxisCustomDateGroup) elements.xAxisCustomDateGroup.style.display = 'none';
+          config.xAxis.format = val;
+        }
+        updateFormatOptionsVisibility('x-axis', val);
+      });
+    }
+    if (elements.xAxisCustomDate) {
+      elements.xAxisCustomDate.addEventListener('input', (e) => {
+        const pattern = e.target.value.trim();
+        config.xAxis.format = pattern ? 'custom:' + pattern : 'auto';
       });
     }
     if (elements.xAxisDecimals) {
@@ -2530,7 +2564,7 @@
     const currencyGroup = document.getElementById(`${prefix}-currency-group`);
 
     // Date formats don't need decimal/currency options
-    const isDateFormat = format && format.startsWith('date-') || format === 'month-year' || format === 'month-only' || format === 'year-only' || format === 'day-month' || format === 'quarter' || format === 'iso';
+    const isDateFormat = format && (format.startsWith('date-') || format === 'month-year' || format === 'month-only' || format === 'year-only' || format === 'day-month' || format === 'quarter' || format === 'iso' || format === 'custom-date');
 
     if (optionsRow) {
       const showOptions = format !== 'auto' && !isDateFormat;

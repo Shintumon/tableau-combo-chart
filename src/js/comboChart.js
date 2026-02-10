@@ -450,7 +450,8 @@ const ComboChart = {
       const xFormat = xAxisConfig.format || 'auto';
       if (xFormat !== 'auto') {
         const isDate = this.dimensionType === 'date' || this.dimensionType === 'date-time';
-        const dateFormatter = isDate ? Config.getDateFormatter(xFormat) : null;
+        const isCustomDate = xFormat.startsWith('custom:');
+        const dateFormatter = (isDate || isCustomDate) ? Config.getDateFormatter(xFormat) : null;
         const numFormatter = !isDate ? Config.getFormatter(xFormat, xAxisConfig.decimals, xAxisConfig.currencySymbol) : null;
         // Build lookup from display text → raw value
         const rawLookup = {};
@@ -686,9 +687,17 @@ const ComboChart = {
     const bandWidth = this.xScale.bandwidth();
     const anim = this.getAnimation();
 
+    // Calculate bar dimensions from config
+    const barGap = this.config.barGap !== undefined ? this.config.barGap : 4;
+    const configBarWidth = this.config.barWidth || 0;
+
     if (this.config.barStyle === 'grouped') {
       // Grouped bars - side by side
-      const barWidth = bandWidth / 2 - 2;
+      const autoBarWidth = (bandWidth - barGap) / 2;
+      const barWidth = configBarWidth > 0 ? Math.min(configBarWidth, autoBarWidth) : autoBarWidth;
+      // Center the bar group within the band
+      const groupWidth = barWidth * 2 + barGap;
+      const groupOffset = (bandWidth - groupWidth) / 2;
 
       // Bar 1
       const bar1ShowBorder = this.config.bar1.showBorder !== false;
@@ -697,7 +706,7 @@ const ComboChart = {
         .enter()
         .append('rect')
         .attr('class', 'bar bar-1')
-        .attr('x', d => this.xScale(d.dimension))
+        .attr('x', d => this.xScale(d.dimension) + groupOffset)
         .attr('rx', this.config.bar1.cornerRadius)
         .attr('fill', this.config.bar1.color)
         .attr('fill-opacity', this.config.bar1.opacity)
@@ -737,7 +746,7 @@ const ComboChart = {
         .enter()
         .append('rect')
         .attr('class', 'bar bar-2')
-        .attr('x', d => this.xScale(d.dimension) + barWidth + 4)
+        .attr('x', d => this.xScale(d.dimension) + groupOffset + barWidth + barGap)
         .attr('rx', this.config.bar2.cornerRadius)
         .attr('fill', this.config.bar2.color)
         .attr('fill-opacity', this.config.bar2.opacity)
@@ -772,7 +781,9 @@ const ComboChart = {
 
     } else {
       // Stacked bars
-      const barWidth = bandWidth - 4;
+      const autoStackWidth = bandWidth - 4;
+      const barWidth = configBarWidth > 0 ? Math.min(configBarWidth, autoStackWidth) : autoStackWidth;
+      const stackOffset = (bandWidth - barWidth) / 2;
       const bar1ShowBorder = this.config.bar1.showBorder !== false;
       const bar2ShowBorder = this.config.bar2.showBorder !== false;
 
@@ -782,7 +793,7 @@ const ComboChart = {
         .enter()
         .append('rect')
         .attr('class', 'bar bar-1')
-        .attr('x', d => this.xScale(d.dimension) + 2)
+        .attr('x', d => this.xScale(d.dimension) + stackOffset)
         .attr('fill', this.config.bar1.color)
         .attr('fill-opacity', this.config.bar1.opacity)
         .attr('stroke', bar1ShowBorder ? this.config.bar1.borderColor : 'none')
@@ -820,7 +831,7 @@ const ComboChart = {
         .enter()
         .append('rect')
         .attr('class', 'bar bar-2')
-        .attr('x', d => this.xScale(d.dimension) + 2)
+        .attr('x', d => this.xScale(d.dimension) + stackOffset)
         .attr('rx', this.config.bar2.cornerRadius)
         .attr('fill', this.config.bar2.color)
         .attr('fill-opacity', this.config.bar2.opacity)
@@ -997,7 +1008,22 @@ const ComboChart = {
 
     // Bar labels
     if (this.config.barLabels.show) {
-      const barWidth = this.config.barStyle === 'grouped' ? bandWidth / 2 - 2 : bandWidth - 4;
+      const barGap = this.config.barGap !== undefined ? this.config.barGap : 4;
+      const configBarWidth = this.config.barWidth || 0;
+      let barWidth, bar1LabelX, bar2LabelX;
+      if (this.config.barStyle === 'grouped') {
+        const autoW = (bandWidth - barGap) / 2;
+        barWidth = configBarWidth > 0 ? Math.min(configBarWidth, autoW) : autoW;
+        const groupWidth = barWidth * 2 + barGap;
+        const groupOffset = (bandWidth - groupWidth) / 2;
+        bar1LabelX = (d) => this.xScale(d.dimension) + groupOffset + barWidth / 2;
+        bar2LabelX = (d) => this.xScale(d.dimension) + groupOffset + barWidth + barGap + barWidth / 2;
+      } else {
+        const autoW = bandWidth - 4;
+        barWidth = configBarWidth > 0 ? Math.min(configBarWidth, autoW) : autoW;
+        bar1LabelX = (d) => this.xScale(d.dimension) + bandWidth / 2;
+        bar2LabelX = (d) => this.xScale(d.dimension) + bandWidth / 2;
+      }
       const barLabelConfig = this.config.barLabels || {};
 
       // Bar 1 font settings with fallbacks
@@ -1030,15 +1056,7 @@ const ComboChart = {
         .enter()
         .append('text')
         .attr('class', 'bar-label bar-label-1')
-        .attr('x', d => {
-          let x;
-          if (this.config.barStyle === 'grouped') {
-            x = this.xScale(d.dimension) + barWidth / 2;
-          } else {
-            x = this.xScale(d.dimension) + bandWidth / 2;
-          }
-          return x + bar1OffsetX;
-        })
+        .attr('x', d => bar1LabelX(d) + bar1OffsetX)
         .attr('y', d => {
           const y = this.yScaleLeft(d.bar1Value);
           let baseY;
@@ -1061,15 +1079,7 @@ const ComboChart = {
         .enter()
         .append('text')
         .attr('class', 'bar-label bar-label-2')
-        .attr('x', d => {
-          let x;
-          if (this.config.barStyle === 'grouped') {
-            x = this.xScale(d.dimension) + barWidth + 4 + barWidth / 2;
-          } else {
-            x = this.xScale(d.dimension) + bandWidth / 2;
-          }
-          return x + bar2OffsetX;
-        })
+        .attr('x', d => bar2LabelX(d) + bar2OffsetX)
         .attr('y', d => {
           const y = this.config.barStyle === 'grouped'
             ? this.yScaleLeft(d.bar2Value)
