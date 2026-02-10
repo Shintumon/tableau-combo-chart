@@ -233,13 +233,26 @@ const DataHandler = {
   },
 
   /**
-   * Load saved config from Tableau settings
+   * Load saved config - uses Config.current if available, otherwise reads from settings
    */
   loadSavedConfig() {
+    // First try to use Config.current which is already loaded and up-to-date
+    if (typeof Config !== 'undefined' && Config.current) {
+      console.log('DataHandler: Using Config.current for field mapping');
+      return {
+        dimension: Config.current.dimension || '',
+        bar1Measure: Config.current.bar1Measure || '',
+        bar2Measure: Config.current.bar2Measure || '',
+        lineMeasure: Config.current.lineMeasure || ''
+      };
+    }
+
+    // Fallback to reading directly from settings
     try {
       const configStr = tableau.extensions.settings.get('comboChartConfig');
       if (configStr) {
         const config = JSON.parse(configStr);
+        console.log('DataHandler: Using settings for field mapping');
         return {
           dimension: config.dimension || '',
           bar1Measure: config.bar1Measure || '',

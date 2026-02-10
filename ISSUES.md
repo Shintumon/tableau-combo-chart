@@ -42,6 +42,16 @@
 **Description:** When changing dimension or measures in the Data tab and clicking Apply, the chart didn't update with the new field selections.
 **Fix:** Updated `DataHandler.getData()` to read and use the saved config values for field mapping, with auto-detection as fallback.
 
+### Issue #9: Bar swap not reflecting on chart
+**Status:** Fixed
+**Description:** Switching Bar 1 and Bar 2 measures in the dialog and clicking Apply didn't update the actual bars on the chart.
+**Fix:** Updated `DataHandler.loadSavedConfig()` to use `Config.current` which is already loaded and up-to-date after settings change.
+
+### Issue #10: X-axis sort not working for dates
+**Status:** Fixed
+**Description:** The sort options (Default, Ascending, Descending) didn't work correctly for date values like "February 2026", "January 2026".
+**Fix:** Added date-aware sorting that detects month-year formats and sorts chronologically. Also added "Reverse" option to reverse data source order.
+
 ---
 
 ## How to Report New Issues
@@ -64,3 +74,6 @@ After deploying fixes, verify:
 - [ ] Left Y-axis has adequate spacing from chart area
 - [ ] Selected measures are filtered from other dropdowns
 - [ ] Changing dimension/measures and clicking Apply updates the chart
+- [ ] Swapping Bar 1 and Bar 2 measures and clicking Apply updates the bars
+- [ ] X-axis sort options work for date values (chronological order)
+- [ ] "Reverse" sort option reverses the data source order

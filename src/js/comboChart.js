@@ -193,10 +193,44 @@ const ComboChart = {
     // Sort data if configured
     let sortedData = [...this.data];
     const sortOrder = this.config.xAxis?.sort || 'default';
-    if (sortOrder === 'asc') {
-      sortedData.sort((a, b) => String(a.dimension).localeCompare(String(b.dimension)));
-    } else if (sortOrder === 'desc') {
-      sortedData.sort((a, b) => String(b.dimension).localeCompare(String(a.dimension)));
+
+    if (sortOrder === 'asc' || sortOrder === 'desc') {
+      // Try to detect if values are dates and sort accordingly
+      const parseDate = (str) => {
+        if (!str) return null;
+        // Try parsing as date string (e.g., "February 2026", "Jan 2025", "2025-01-15")
+        const date = new Date(str);
+        if (!isNaN(date.getTime())) return date.getTime();
+        // Try month-year formats like "February 2026"
+        const monthYear = str.match(/^(\w+)\s+(\d{4})$/);
+        if (monthYear) {
+          const parsed = new Date(`${monthYear[1]} 1, ${monthYear[2]}`);
+          if (!isNaN(parsed.getTime())) return parsed.getTime();
+        }
+        return null;
+      };
+
+      // Check if first few values look like dates
+      const sampleDates = sortedData.slice(0, 3).map(d => parseDate(d.dimension));
+      const isDateData = sampleDates.filter(d => d !== null).length >= 2;
+
+      if (isDateData) {
+        // Sort by date
+        sortedData.sort((a, b) => {
+          const dateA = parseDate(a.dimension) || 0;
+          const dateB = parseDate(b.dimension) || 0;
+          return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+      } else {
+        // Sort alphabetically
+        sortedData.sort((a, b) => {
+          const cmp = String(a.dimension).localeCompare(String(b.dimension));
+          return sortOrder === 'asc' ? cmp : -cmp;
+        });
+      }
+    } else if (sortOrder === 'reverse') {
+      // Reverse the original data order
+      sortedData.reverse();
     }
     this.data = sortedData;
 
