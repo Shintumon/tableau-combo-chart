@@ -32,6 +32,16 @@
 **Description:** The left Y-axis title and tick labels were positioned too close to the chart, causing readability issues.
 **Fix:** Increased left margin base from 50-90px to 70-110px and adjusted title offset positioning.
 
+### Issue #7: Selected measures appear in all dropdowns
+**Status:** Fixed
+**Description:** When selecting a measure in one dropdown, it should not appear as an option in other measure dropdowns to prevent duplicate selection.
+**Fix:** Added `updateMeasureDropdowns()` function that filters out already-selected measures from other dropdowns.
+
+### Issue #8: Dimension/measure changes not applied
+**Status:** Fixed
+**Description:** When changing dimension or measures in the Data tab and clicking Apply, the chart didn't update with the new field selections.
+**Fix:** Updated `DataHandler.getData()` to read and use the saved config values for field mapping, with auto-detection as fallback.
+
 ---
 
 ## How to Report New Issues
@@ -52,3 +62,5 @@ After deploying fixes, verify:
 - [ ] Validation errors show styled modal with "Combo Chart" title
 - [ ] X-axis sort option works (Axes tab > X-Axis > Sort Order)
 - [ ] Left Y-axis has adequate spacing from chart area
+- [ ] Selected measures are filtered from other dropdowns
+- [ ] Changing dimension/measures and clicking Apply updates the chart

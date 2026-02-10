@@ -27,8 +27,8 @@ const DataHandler = {
   },
 
   /**
-   * Get data from worksheet using encodings
-   * Encodings are defined in the manifest and appear as Marks card fields
+   * Get data from worksheet using config settings or auto-detection
+   * Prioritizes user-configured fields over automatic detection
    */
   async getData() {
     const worksheet = this.getWorksheet();
@@ -53,57 +53,74 @@ const DataHandler = {
         return { data: [], fieldNames: {} };
       }
 
-      // Smart field detection based on field names and data types
+      // Load saved config to get user-selected fields
+      const savedConfig = this.loadSavedConfig();
+
+      // Try to map fields from config first, then fall back to auto-detection
       let dimIndex = -1;
       let bar1Index = -1;
       let bar2Index = -1;
       let lineIndex = -1;
 
-      const measureIndices = [];
-
+      // Find column indices based on saved config field names
       columns.forEach((col, idx) => {
-        const name = col.fieldName.toLowerCase();
-        const isDateOrString = col.dataType === 'string' || col.dataType === 'date' || col.dataType === 'date-time';
-        const isNumeric = col.dataType === 'int' || col.dataType === 'float';
-
-        // Detect dimension (date/time fields or string categories)
-        if (isDateOrString) {
-          if (dimIndex === -1) {
-            dimIndex = idx;
-          }
-        } else if (isNumeric) {
-          // Try to detect line measure (usually percentage or ratio)
-          if (name.includes('%') || name.includes('margin') || name.includes('ratio') || name.includes('rate')) {
-            if (lineIndex === -1) {
-              lineIndex = idx;
-            }
-          } else {
-            measureIndices.push(idx);
-          }
+        if (savedConfig.dimension && col.fieldName === savedConfig.dimension) {
+          dimIndex = idx;
+        }
+        if (savedConfig.bar1Measure && col.fieldName === savedConfig.bar1Measure) {
+          bar1Index = idx;
+        }
+        if (savedConfig.bar2Measure && col.fieldName === savedConfig.bar2Measure) {
+          bar2Index = idx;
+        }
+        if (savedConfig.lineMeasure && col.fieldName === savedConfig.lineMeasure) {
+          lineIndex = idx;
         }
       });
 
-      // Assign bar measures from remaining numeric fields
-      if (measureIndices.length >= 1) bar1Index = measureIndices[0];
-      if (measureIndices.length >= 2) bar2Index = measureIndices[1];
+      console.log('Config-based field mapping:', { dimIndex, bar1Index, bar2Index, lineIndex });
 
-      // If line wasn't detected by name, use third measure
-      if (lineIndex === -1 && measureIndices.length >= 3) {
-        lineIndex = measureIndices[2];
+      // Fall back to auto-detection for any fields not found in config
+      if (dimIndex === -1 || bar1Index === -1 || bar2Index === -1 || lineIndex === -1) {
+        const measureIndices = [];
+
+        columns.forEach((col, idx) => {
+          const name = col.fieldName.toLowerCase();
+          const isDateOrString = col.dataType === 'string' || col.dataType === 'date' || col.dataType === 'date-time';
+          const isNumeric = col.dataType === 'int' || col.dataType === 'float';
+
+          // Detect dimension (date/time fields or string categories)
+          if (isDateOrString && dimIndex === -1) {
+            dimIndex = idx;
+          } else if (isNumeric) {
+            // Try to detect line measure (usually percentage or ratio)
+            if (lineIndex === -1 && (name.includes('%') || name.includes('margin') || name.includes('ratio') || name.includes('rate'))) {
+              lineIndex = idx;
+            } else {
+              measureIndices.push(idx);
+            }
+          }
+        });
+
+        // Assign bar measures from remaining numeric fields if not set
+        if (bar1Index === -1 && measureIndices.length >= 1) bar1Index = measureIndices[0];
+        if (bar2Index === -1 && measureIndices.length >= 2) bar2Index = measureIndices[1];
+
+        // If line wasn't detected, use third measure or second bar
+        if (lineIndex === -1 && measureIndices.length >= 3) {
+          lineIndex = measureIndices[2];
+        } else if (lineIndex === -1 && bar2Index >= 0) {
+          lineIndex = bar2Index;
+          bar2Index = measureIndices.length >= 3 ? measureIndices[2] : -1;
+        }
+
+        // If we don't have a dimension, use first column
+        if (dimIndex === -1 && columns.length > 0) {
+          dimIndex = 0;
+        }
       }
 
-      // If we still don't have a line, use bar2 as line and leave bar2 empty
-      if (lineIndex === -1 && bar2Index >= 0) {
-        lineIndex = bar2Index;
-        bar2Index = measureIndices.length >= 3 ? measureIndices[2] : -1;
-      }
-
-      // If we don't have a dimension, use first column
-      if (dimIndex === -1 && columns.length > 0) {
-        dimIndex = 0;
-      }
-
-      console.log('Field mapping:', { dimIndex, bar1Index, bar2Index, lineIndex });
+      console.log('Final field mapping:', { dimIndex, bar1Index, bar2Index, lineIndex });
 
       // Transform data
       const chartData = data.map(row => {
@@ -213,5 +230,26 @@ const DataHandler = {
       worksheet.removeEventListener(tableau.TableauEventType.FilterChanged, callback);
       worksheet.removeEventListener(tableau.TableauEventType.SummaryDataChanged, callback);
     }
+  },
+
+  /**
+   * Load saved config from Tableau settings
+   */
+  loadSavedConfig() {
+    try {
+      const configStr = tableau.extensions.settings.get('comboChartConfig');
+      if (configStr) {
+        const config = JSON.parse(configStr);
+        return {
+          dimension: config.dimension || '',
+          bar1Measure: config.bar1Measure || '',
+          bar2Measure: config.bar2Measure || '',
+          lineMeasure: config.lineMeasure || ''
+        };
+      }
+    } catch (e) {
+      console.error('Error loading saved config in DataHandler:', e);
+    }
+    return { dimension: '', bar1Measure: '', bar2Measure: '', lineMeasure: '' };
   }
 };

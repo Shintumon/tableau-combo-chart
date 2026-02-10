@@ -741,7 +741,8 @@
   }
 
   /**
-   * Populate field select dropdowns
+   * Populate field select dropdowns with filtering
+   * Selected measures in one dropdown won't appear in others
    */
   function populateFieldSelects() {
     // Dimension select
@@ -753,26 +754,63 @@
       elements.dimensionSelect.appendChild(option);
     });
 
-    // Measure selects
-    const measureSelects = [elements.bar1Measure, elements.bar2Measure, elements.lineMeasure];
-    measureSelects.forEach(select => {
-      select.innerHTML = '<option value="">Select Measure</option>';
-      columns.measures.forEach(measure => {
-        const option = document.createElement('option');
-        option.value = measure.fieldName;
-        option.textContent = measure.fieldName;
-        select.appendChild(option);
-      });
-    });
-
-    // Set current values
+    // Set current dimension value first
     if (config.dimension) elements.dimensionSelect.value = config.dimension;
-    if (config.bar1Measure) elements.bar1Measure.value = config.bar1Measure;
-    if (config.bar2Measure) elements.bar2Measure.value = config.bar2Measure;
-    if (config.lineMeasure) elements.lineMeasure.value = config.lineMeasure;
+
+    // Update measure dropdowns with filtering
+    updateMeasureDropdowns();
 
     // Update section headers with field names
     updateFieldLabels();
+  }
+
+  /**
+   * Update measure dropdowns, filtering out already-selected values
+   */
+  function updateMeasureDropdowns() {
+    const currentValues = {
+      bar1: config.bar1Measure || '',
+      bar2: config.bar2Measure || '',
+      line: config.lineMeasure || ''
+    };
+
+    // Helper to populate a measure select with filtered options
+    const populateMeasureSelect = (selectEl, currentValue, excludeValues) => {
+      const previousValue = selectEl.value;
+      selectEl.innerHTML = '<option value="">Select Measure</option>';
+
+      columns.measures.forEach(measure => {
+        // Include if it's the current value OR not in the exclude list
+        if (measure.fieldName === currentValue || !excludeValues.includes(measure.fieldName)) {
+          const option = document.createElement('option');
+          option.value = measure.fieldName;
+          option.textContent = measure.fieldName;
+          selectEl.appendChild(option);
+        }
+      });
+
+      // Restore the value
+      selectEl.value = currentValue || previousValue || '';
+    };
+
+    // Populate each dropdown, excluding values selected in other dropdowns
+    populateMeasureSelect(
+      elements.bar1Measure,
+      currentValues.bar1,
+      [currentValues.bar2, currentValues.line].filter(v => v)
+    );
+
+    populateMeasureSelect(
+      elements.bar2Measure,
+      currentValues.bar2,
+      [currentValues.bar1, currentValues.line].filter(v => v)
+    );
+
+    populateMeasureSelect(
+      elements.lineMeasure,
+      currentValues.line,
+      [currentValues.bar1, currentValues.bar2].filter(v => v)
+    );
   }
 
   /**
@@ -1127,21 +1165,24 @@
       if (element) element.addEventListener(event, handler);
     };
 
-    // Field changes
+    // Field changes - update config and refresh dropdowns to filter selections
     safeAddListener(elements.dimensionSelect, 'change', (e) => {
       config.dimension = e.target.value;
       updateFieldLabels();
     });
     safeAddListener(elements.bar1Measure, 'change', (e) => {
       config.bar1Measure = e.target.value;
+      updateMeasureDropdowns(); // Refresh other dropdowns to exclude this selection
       updateFieldLabels();
     });
     safeAddListener(elements.bar2Measure, 'change', (e) => {
       config.bar2Measure = e.target.value;
+      updateMeasureDropdowns(); // Refresh other dropdowns to exclude this selection
       updateFieldLabels();
     });
     safeAddListener(elements.lineMeasure, 'change', (e) => {
       config.lineMeasure = e.target.value;
+      updateMeasureDropdowns(); // Refresh other dropdowns to exclude this selection
       updateFieldLabels();
     });
 
