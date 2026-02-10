@@ -99,9 +99,9 @@ const ComboChart = {
     const bottomExtra = this.config.xAxis?.title && this.config.xAxis?.showTitle !== false ? 25 : 0;
     this.margin.bottom = Math.max(50, Math.min(120, bottomBase + bottomExtra));
 
-    // Left margin - accommodate y-axis labels and title
-    const leftBase = Math.max(50, Math.min(90, baseMargin * 1.2));
-    const leftExtra = this.config.yAxisLeft?.showTitle !== false ? 20 : 0;
+    // Left margin - accommodate y-axis labels and title (increased for better readability)
+    const leftBase = Math.max(70, Math.min(110, baseMargin * 1.4));
+    const leftExtra = this.config.yAxisLeft?.showTitle !== false ? 25 : 0;
     this.margin.left = leftBase + leftExtra;
 
     // Right margin - accommodate right y-axis if dual mode
@@ -454,8 +454,8 @@ const ComboChart = {
       if (yAxisLeftConfig.showTitle !== false) {
         const leftTitle = this.config.yAxisLeft.title ||
           `${this.fieldNames.bar1} / ${this.fieldNames.bar2}`;
-        // Position title at a safe distance from tick labels (use margin as guide)
-        const titleXOffset = -Math.max(this.margin.left - 15, 50);
+        // Position title at a safe distance from tick labels (increased offset)
+        const titleXOffset = -Math.max(this.margin.left - 10, 60);
 
         yAxisLeftGroup.append('text')
           .attr('class', 'axis-title')

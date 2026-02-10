@@ -11,6 +11,91 @@
   let worksheet = null;
   let columns = { dimensions: [], measures: [] };
 
+  /**
+   * Show a custom modal message (replaces generic browser alerts)
+   * @param {string} title - The modal title
+   * @param {string} message - The message body (can contain HTML)
+   * @param {string} type - 'error', 'warning', 'success', or 'info'
+   */
+  function showMessage(title, message, type = 'info') {
+    // Remove any existing modal
+    const existingModal = document.getElementById('extension-modal');
+    if (existingModal) existingModal.remove();
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'extension-modal';
+    modal.className = 'extension-modal';
+    modal.innerHTML = `
+      <div class="extension-modal-overlay"></div>
+      <div class="extension-modal-content extension-modal-${type}">
+        <div class="extension-modal-header">
+          <span class="extension-modal-icon">${getModalIcon(type)}</span>
+          <h3 class="extension-modal-title">${title}</h3>
+        </div>
+        <div class="extension-modal-body">${message}</div>
+        <div class="extension-modal-footer">
+          <button type="button" class="btn btn-primary extension-modal-close">OK</button>
+        </div>
+      </div>
+    `;
+
+    // Add modal styles if not already present
+    if (!document.getElementById('extension-modal-styles')) {
+      const styles = document.createElement('style');
+      styles.id = 'extension-modal-styles';
+      styles.textContent = `
+        .extension-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .extension-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+        .extension-modal-content { position: relative; background: white; border-radius: 12px; width: 90%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalSlideIn 0.2s ease-out; }
+        @keyframes modalSlideIn { from { opacity: 0; transform: scale(0.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .extension-modal-header { display: flex; align-items: center; gap: 12px; padding: 20px 24px 16px; border-bottom: 1px solid #e5e7eb; }
+        .extension-modal-icon { font-size: 24px; line-height: 1; }
+        .extension-modal-title { margin: 0; font-size: 16px; font-weight: 600; color: #1f2937; }
+        .extension-modal-body { padding: 20px 24px; font-size: 14px; color: #4b5563; line-height: 1.6; }
+        .extension-modal-body ul { margin: 10px 0 0 0; padding-left: 20px; }
+        .extension-modal-body li { margin: 6px 0; }
+        .extension-modal-footer { padding: 16px 24px 20px; display: flex; justify-content: flex-end; }
+        .extension-modal-error .extension-modal-header { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
+        .extension-modal-error .extension-modal-title { color: #991b1b; }
+        .extension-modal-warning .extension-modal-header { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); }
+        .extension-modal-warning .extension-modal-title { color: #92400e; }
+        .extension-modal-success .extension-modal-header { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); }
+        .extension-modal-success .extension-modal-title { color: #065f46; }
+        .extension-modal-info .extension-modal-header { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+        .extension-modal-info .extension-modal-title { color: #1e40af; }
+      `;
+      document.head.appendChild(styles);
+    }
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeBtn = modal.querySelector('.extension-modal-close');
+    const overlay = modal.querySelector('.extension-modal-overlay');
+    const closeModal = () => modal.remove();
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escHandler); }
+    });
+
+    closeBtn.focus();
+  }
+
+  /**
+   * Get icon for modal type
+   */
+  function getModalIcon(type) {
+    switch (type) {
+      case 'error': return '⚠️';
+      case 'warning': return '⚡';
+      case 'success': return '✓';
+      default: return 'ℹ️';
+    }
+  }
+
   // DOM Elements cache
   const elements = {};
 
@@ -63,8 +148,16 @@
 
     } catch (error) {
       console.error('Dialog initialization error:', error);
-      // Show error to user
-      document.body.innerHTML = '<div style="padding: 20px; color: red;"><h2>Dialog Error</h2><p>' + (error.message || error) + '</p></div>';
+      // Show styled error to user
+      document.body.innerHTML = `
+        <div style="padding: 40px; font-family: system-ui, sans-serif; text-align: center; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div style="background: white; padding: 32px 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 400px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+            <h2 style="margin: 0 0 12px 0; color: #991b1b; font-size: 18px;">Combo Chart - Dialog Error</h2>
+            <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">${error.message || error}</p>
+            <p style="margin: 16px 0 0 0; color: #9ca3af; font-size: 12px;">Please try reopening the configuration dialog.</p>
+          </div>
+        </div>`;
     }
   }
 
@@ -1717,7 +1810,11 @@
     const errors = validate();
 
     if (errors.length > 0) {
-      alert('Please fix the following errors:\n\n' + errors.join('\n'));
+      showMessage(
+        'Combo Chart - Validation Error',
+        '<p>Please fix the following issues:</p><ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>',
+        'error'
+      );
       return;
     }
 
@@ -1981,7 +2078,11 @@
     const errors = validate();
 
     if (errors.length > 0) {
-      alert('Please fix the following errors:\n\n' + errors.join('\n'));
+      showMessage(
+        'Combo Chart - Validation Error',
+        '<p>Please fix the following issues:</p><ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>',
+        'error'
+      );
       return;
     }
 
@@ -1992,7 +2093,11 @@
       tableau.extensions.ui.closeDialog('saved');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings: ' + (error.message || error));
+      showMessage(
+        'Combo Chart - Save Error',
+        `<p>Failed to save settings:</p><p>${error.message || error}</p>`,
+        'error'
+      );
     }
   }
 

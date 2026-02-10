@@ -17,6 +17,21 @@
 **Description:** Dialog footer buttons were not responding to clicks.
 **Fix:** Added more robust event handler attachment using direct onclick assignment as fallback.
 
+### Issue #4: Generic JavaScript error messages
+**Status:** Fixed
+**Description:** Pop-up errors and messages showed generic JavaScript alerts without extension branding.
+**Fix:** Created custom styled modal with extension-specific titles ("Combo Chart - Validation Error", etc.) and improved error formatting.
+
+### Issue #5: X-axis sorted in wrong direction
+**Status:** Fixed
+**Description:** The X-axis categories were sorted in an unexpected order.
+**Fix:** Sort option already existed in Axes tab > X-Axis > Sort Order. Options: Default (Data Order), Ascending (A-Z), Descending (Z-A).
+
+### Issue #6: Left Y-axis label and tick labels too close
+**Status:** Fixed
+**Description:** The left Y-axis title and tick labels were positioned too close to the chart, causing readability issues.
+**Fix:** Increased left margin base from 50-90px to 70-110px and adjusted title offset positioning.
+
 ---
 
 ## How to Report New Issues
@@ -34,3 +49,6 @@ After deploying fixes, verify:
 - [ ] Cancel button closes dialog without saving
 - [ ] Apply button saves settings and shows feedback
 - [ ] Save & Close button saves and closes dialog
+- [ ] Validation errors show styled modal with "Combo Chart" title
+- [ ] X-axis sort option works (Axes tab > X-Axis > Sort Order)
+- [ ] Left Y-axis has adequate spacing from chart area
