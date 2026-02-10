@@ -4,20 +4,24 @@
 
 .dialog-body {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  height: 100vh;     /* Use exact viewport height */
   min-height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;  /* Prevent body scroll, let content scroll */
   padding: 0;
+  margin: 0;
 }
 
 .dialog-container {
-  max-width: 680px;
+  max-width: 900px;  /* Allow wider when window is expanded */
+  width: 100%;       /* Fill available width */
   margin: 0 auto;
   background: white;
+  height: 100vh;     /* Use full viewport height */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  overflow: visible;
+  overflow: hidden;  /* Prevent double scrollbars */
 }
 
 /* Header */
@@ -25,8 +29,7 @@
   padding: 20px 24px;
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #2d5a87 100%);
   border-bottom: none;
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;    /* Don't shrink, stay at natural height */
   z-index: 20;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
@@ -84,9 +87,9 @@
 }
 
 .dialog-content {
-  flex: 1;
+  flex: 1;           /* Take all available space between header and footer */
   overflow-y: auto;
-  max-height: calc(100vh - 140px);
+  min-height: 0;     /* Required for flex child to scroll properly */
   scrollbar-width: thin;
   scrollbar-color: var(--gray-300) transparent;
 }
@@ -116,8 +119,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  bottom: 0;
+  flex-shrink: 0;    /* Don't shrink, stay at natural height */
   z-index: 20;
   box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
 }
@@ -190,6 +192,7 @@
   position: relative;
   z-index: 19;
   box-shadow: inset 0 -1px 0 var(--gray-200);
+  flex-shrink: 0;    /* Don't shrink, stay at natural height */
 }
 
 .tabs::-webkit-scrollbar {
