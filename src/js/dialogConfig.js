@@ -118,8 +118,8 @@
       loadConfig();
       console.log('Config loaded');
 
-      // Cache DOM elements
-      cacheElements();
+      // Cache DOM elements and initialize font dropdowns
+      await cacheElements();
       console.log('Elements cached');
 
       // Load columns from the worksheet
@@ -380,7 +380,7 @@
   /**
    * Cache DOM elements
    */
-  function cacheElements() {
+  async function cacheElements() {
     // Data tab - no worksheet select needed for viz extensions
     elements.dimensionSelect = document.getElementById('dimension-select');
     elements.bar1Measure = document.getElementById('bar1-measure');
@@ -585,14 +585,14 @@
     // Initialize color palettes UI
     initColorPalettes();
 
-    // Initialize font select dropdowns
-    initFontSelects();
+    // Initialize font select dropdowns (async - enumerates system fonts)
+    await initFontSelects();
   }
 
   /**
-   * Font families list with primary font name shown
+   * Fallback font families list (used when queryLocalFonts is unavailable)
    */
-  const fontFamilies = [
+  const fallbackFontFamilies = [
     { value: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", label: 'System UI', primary: 'system-ui' },
     { value: "'Segoe UI', Tahoma, Geneva, sans-serif", label: 'Segoe UI', primary: 'Segoe UI' },
     { value: 'Arial, Helvetica, sans-serif', label: 'Arial', primary: 'Arial' },
@@ -609,8 +609,73 @@
     { value: "Tahoma, Geneva, sans-serif", label: 'Tahoma', primary: 'Tahoma' },
     { value: "Trebuchet MS, sans-serif", label: 'Trebuchet MS', primary: 'Trebuchet MS' },
     { value: "'Courier New', Courier, monospace", label: 'Courier New', primary: 'Courier New' },
-    { value: "'SF Mono', 'Consolas', 'Monaco', monospace", label: 'SF Mono / Consolas', primary: 'SF Mono' }
+    { value: "'SF Mono', 'Consolas', 'Monaco', monospace", label: 'SF Mono / Consolas', primary: 'SF Mono' },
+    { value: "Calibri, 'Segoe UI', sans-serif", label: 'Calibri', primary: 'Calibri' },
+    { value: "Cambria, Georgia, serif", label: 'Cambria', primary: 'Cambria' },
+    { value: "Candara, Optima, sans-serif", label: 'Candara', primary: 'Candara' },
+    { value: "Consolas, 'Courier New', monospace", label: 'Consolas', primary: 'Consolas' },
+    { value: "Constantia, Georgia, serif", label: 'Constantia', primary: 'Constantia' },
+    { value: "Corbel, 'Segoe UI', sans-serif", label: 'Corbel', primary: 'Corbel' },
+    { value: "'Franklin Gothic Medium', Arial, sans-serif", label: 'Franklin Gothic', primary: 'Franklin Gothic Medium' },
+    { value: "Garamond, Georgia, serif", label: 'Garamond', primary: 'Garamond' },
+    { value: "Impact, 'Arial Black', sans-serif", label: 'Impact', primary: 'Impact' },
+    { value: "'Lucida Console', Monaco, monospace", label: 'Lucida Console', primary: 'Lucida Console' },
+    { value: "'Lucida Sans Unicode', 'Lucida Grande', sans-serif", label: 'Lucida Sans', primary: 'Lucida Sans Unicode' },
+    { value: "'Palatino Linotype', Palatino, serif", label: 'Palatino', primary: 'Palatino Linotype' },
+    { value: "'Century Gothic', sans-serif", label: 'Century Gothic', primary: 'Century Gothic' },
+    { value: "'Book Antiqua', Palatino, serif", label: 'Book Antiqua', primary: 'Book Antiqua' },
+    { value: "'Comic Sans MS', cursive", label: 'Comic Sans MS', primary: 'Comic Sans MS' }
   ];
+
+  /**
+   * Cache for system fonts
+   */
+  let systemFontsCache = null;
+
+  /**
+   * Get system fonts using queryLocalFonts() API with fallback
+   * Returns array of { value, label, primary } objects
+   */
+  async function getSystemFonts() {
+    if (systemFontsCache) return systemFontsCache;
+
+    // Try the Local Font Access API (Chrome 103+)
+    try {
+      if (window.queryLocalFonts) {
+        const fonts = await window.queryLocalFonts();
+        const familySet = new Set();
+        const systemFonts = [];
+
+        fonts.forEach(font => {
+          const family = font.family;
+          if (!familySet.has(family)) {
+            familySet.add(family);
+            systemFonts.push({
+              value: buildFontStack(family),
+              label: family,
+              primary: family
+            });
+          }
+        });
+
+        // Sort alphabetically
+        systemFonts.sort((a, b) => a.label.localeCompare(b.label));
+        systemFontsCache = systemFonts;
+        console.log(`Local Font Access API: found ${systemFonts.length} font families`);
+        return systemFonts;
+      }
+    } catch (e) {
+      console.log('Local Font Access API not available:', e.message);
+    }
+
+    // Fallback: use hardcoded list, filter to available fonts
+    const available = fallbackFontFamilies.filter(f =>
+      f.primary === 'system-ui' || isFontAvailable(f.primary)
+    );
+    systemFontsCache = available;
+    console.log(`Font fallback list: ${available.length} available fonts`);
+    return available;
+  }
 
   /**
    * Check if a font is available on the system
@@ -785,11 +850,12 @@
   }
 
   /**
-   * Initialize font select dropdowns with availability check
+   * Initialize font select dropdowns with system fonts
    */
-  function initFontSelects() {
+  async function initFontSelects() {
     const fontSelects = document.querySelectorAll('.font-select');
     const detectedFont = detectSystemFont();
+    const systemFonts = await getSystemFonts();
 
     fontSelects.forEach(select => {
       select.innerHTML = '';
@@ -798,7 +864,6 @@
       const detectedOption = document.createElement('option');
       detectedOption.value = detectedFont.family;
 
-      // Show different label based on source
       if (detectedFont.isWorkbookFont) {
         detectedOption.textContent = `${detectedFont.label} (Workbook Default)`;
       } else {
@@ -814,64 +879,24 @@
       separator.textContent = '─────────────';
       select.appendChild(separator);
 
-      // Add common Tableau fonts section if workbook font was detected
-      if (detectedFont.isWorkbookFont) {
-        const tableauLabel = document.createElement('option');
-        tableauLabel.disabled = true;
-        tableauLabel.textContent = 'Tableau Fonts';
-        tableauLabel.style.fontWeight = 'bold';
-        select.appendChild(tableauLabel);
-
-        const tableauFonts = [
-          { value: "'Tableau Book', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Book', primary: 'Tableau Book' },
-          { value: "'Tableau Light', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Light', primary: 'Tableau Light' },
-          { value: "'Tableau Medium', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Medium', primary: 'Tableau Medium' },
-          { value: "'Tableau Semibold', 'Tableau Regular', Arial, sans-serif", label: 'Tableau Semibold', primary: 'Tableau Semibold' }
-        ];
-
-        tableauFonts.forEach(font => {
-          const option = document.createElement('option');
-          option.value = font.value;
-          option.style.fontFamily = font.value;
-          const isAvailable = isFontAvailable(font.primary);
-          option.textContent = font.label + (isAvailable ? '' : ' (fallback)');
-          select.appendChild(option);
-        });
-
-        // Add separator before other fonts
-        const separator2 = document.createElement('option');
-        separator2.disabled = true;
-        separator2.textContent = '─────────────';
-        select.appendChild(separator2);
-      }
-
-      // Add other fonts section header
-      const otherLabel = document.createElement('option');
-      otherLabel.disabled = true;
-      otherLabel.textContent = 'Other Fonts';
-      otherLabel.style.fontWeight = 'bold';
-      select.appendChild(otherLabel);
-
-      fontFamilies.forEach(font => {
+      // Add all system/available fonts
+      systemFonts.forEach(font => {
         // Skip if this is the same as the detected font
-        if (font.primary === detectedFont.primary) {
+        if (font.primary.toLowerCase() === detectedFont.primary.toLowerCase()) {
           return;
         }
 
         const option = document.createElement('option');
         option.value = font.value;
+        option.textContent = font.label;
         option.style.fontFamily = font.value;
-
-        // Check if primary font is available
-        const isAvailable = isFontAvailable(font.primary);
-        option.textContent = font.label + (isAvailable ? '' : ' (fallback)');
-
         select.appendChild(option);
       });
     });
 
     console.log('Font selects initialized. Detected font:', detectedFont.label,
-      detectedFont.isWorkbookFont ? '(from workbook)' : '(system default)');
+      detectedFont.isWorkbookFont ? '(from workbook)' : '(system default)',
+      '| Total fonts:', systemFonts.length);
   }
 
   /**
@@ -1157,6 +1182,36 @@
     }
   }
 
+  /**
+   * Set a font select value with fuzzy matching.
+   * If the exact value doesn't match an option, try matching by primary font name.
+   */
+  function safeSetFontValue(element, value) {
+    if (!element || !value) return;
+
+    // Try exact match first
+    element.value = value;
+    if (element.value === value) return;
+
+    // Extract primary font name from the value (first font in the stack)
+    const primaryFont = value.replace(/['"]/g, '').split(',')[0].trim().toLowerCase();
+
+    // Search options for a matching primary font
+    for (const option of element.options) {
+      if (option.disabled) continue;
+      const optPrimary = option.value.replace(/['"]/g, '').split(',')[0].trim().toLowerCase();
+      if (optPrimary === primaryFont) {
+        element.value = option.value;
+        return;
+      }
+    }
+
+    // If still no match, select the first (default) option
+    if (element.options.length > 0) {
+      element.value = element.options[0].value;
+    }
+  }
+
   function safeSetText(element, text) {
     if (element && text !== undefined) {
       element.textContent = text;
@@ -1326,7 +1381,7 @@
 
     // Font settings
     if (config.font) {
-      safeSetValue(elements.fontFamily, config.font.family);
+      safeSetFontValue(elements.fontFamily, config.font.family);
       safeSetValue(elements.titleWeight, config.font.titleWeight);
       safeSetValue(elements.labelWeight, config.font.labelWeight);
     }
@@ -1339,36 +1394,36 @@
 
     // Individual font settings
     if (config.titleFont) {
-      safeSetValue(elements.titleFontFamily, config.titleFont.family || '');
+      safeSetFontValue(elements.titleFontFamily, config.titleFont.family || '');
       safeSetValue(elements.titleFontWeight, config.titleFont.weight || 600);
       safeSetChecked(elements.titleItalic, config.titleFont.italic || false);
     }
     if (config.xAxisFont) {
-      safeSetValue(elements.xAxisFontFamily, config.xAxisFont.family || '');
+      safeSetFontValue(elements.xAxisFontFamily, config.xAxisFont.family || '');
       safeSetValue(elements.xAxisFontWeight, config.xAxisFont.weight || 400);
       safeSetValue(elements.xAxisFontColor, config.xAxisFont.color || '#666666');
     }
     if (config.yAxisFont) {
-      safeSetValue(elements.yAxisFontFamily, config.yAxisFont.family || '');
+      safeSetFontValue(elements.yAxisFontFamily, config.yAxisFont.family || '');
       safeSetValue(elements.yAxisFontSize, config.yAxisFont.size || 12);
       safeSetValue(elements.yAxisFontWeight, config.yAxisFont.weight || 400);
       safeSetValue(elements.yAxisFontColor, config.yAxisFont.color || '#666666');
     }
     if (config.legendFont) {
-      safeSetValue(elements.legendFontFamily, config.legendFont.family || '');
+      safeSetFontValue(elements.legendFontFamily, config.legendFont.family || '');
       safeSetValue(elements.legendFontSize, config.legendFont.size || 12);
       safeSetValue(elements.legendFontWeight, config.legendFont.weight || 400);
       safeSetValue(elements.legendFontColor, config.legendFont.color || '#333333');
       safeSetChecked(elements.legendItalic, config.legendFont.italic || false);
     }
     if (config.barLabelFont) {
-      safeSetValue(elements.barLabelFontFamily, config.barLabelFont.family || '');
+      safeSetFontValue(elements.barLabelFontFamily, config.barLabelFont.family || '');
       safeSetValue(elements.barLabelFontWeight, config.barLabelFont.weight || 400);
       safeSetChecked(elements.barLabelItalic, config.barLabelFont.italic || false);
     }
     // Bar 1 label font
     if (config.bar1LabelFont) {
-      safeSetValue(elements.bar1LabelFontFamily, config.bar1LabelFont.family || '');
+      safeSetFontValue(elements.bar1LabelFontFamily, config.bar1LabelFont.family || '');
       safeSetValue(elements.bar1LabelFontSize, config.bar1LabelFont.size || 10);
       safeSetValue(elements.bar1LabelFontWeight, config.bar1LabelFont.weight || 400);
       safeSetValue(elements.bar1LabelColor, config.bar1LabelFont.color || '#333333');
@@ -1376,19 +1431,19 @@
     }
     // Bar 2 label font
     if (config.bar2LabelFont) {
-      safeSetValue(elements.bar2LabelFontFamily, config.bar2LabelFont.family || '');
+      safeSetFontValue(elements.bar2LabelFontFamily, config.bar2LabelFont.family || '');
       safeSetValue(elements.bar2LabelFontSize, config.bar2LabelFont.size || 10);
       safeSetValue(elements.bar2LabelFontWeight, config.bar2LabelFont.weight || 400);
       safeSetValue(elements.bar2LabelColor, config.bar2LabelFont.color || '#333333');
       safeSetChecked(elements.bar2LabelItalic, config.bar2LabelFont.italic || false);
     }
     if (config.lineLabelFont) {
-      safeSetValue(elements.lineLabelFontFamily, config.lineLabelFont.family || '');
+      safeSetFontValue(elements.lineLabelFontFamily, config.lineLabelFont.family || '');
       safeSetValue(elements.lineLabelFontWeight, config.lineLabelFont.weight || 400);
       safeSetChecked(elements.lineLabelItalic, config.lineLabelFont.italic || false);
     }
     if (config.tooltipFont) {
-      safeSetValue(elements.tooltipFontFamily, config.tooltipFont.family || '');
+      safeSetFontValue(elements.tooltipFontFamily, config.tooltipFont.family || '');
       safeSetValue(elements.tooltipFontWeight, config.tooltipFont.weight || 400);
     }
 
