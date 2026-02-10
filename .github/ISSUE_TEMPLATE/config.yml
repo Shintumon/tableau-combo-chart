@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://tableau-combo-chart.pages.dev/
+    about: View extension documentation and usage guide
