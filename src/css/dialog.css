@@ -376,9 +376,14 @@ select.form-control {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 12px center;
   background-repeat: no-repeat;
-  background-size: 14px;
+  background-size: 14px 14px;
   padding-right: 38px;
   min-height: 42px;
+}
+
+/* Remove IE/Edge default dropdown arrow */
+select.form-control::-ms-expand {
+  display: none;
 }
 
 select.form-control:hover {
@@ -397,6 +402,16 @@ select.form-control option {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  /* Remove any checkmarks or icons from options */
+  list-style: none;
+  list-style-type: none;
+}
+
+/* Hide checkmarks on selected options in some browsers */
+select.form-control option::before,
+select.form-control option::after {
+  display: none !important;
+  content: none !important;
 }
 
 select.form-control option:checked,
@@ -410,6 +425,26 @@ select.form-control:not([multiple]):not([size]) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Force single-line dropdown display */
+  height: 42px;
+  line-height: 20px;
+}
+
+/* Reset any list-like display of options */
+select.form-control,
+select.form-control * {
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+/* Ensure options don't show until clicked */
+select.form-control option {
+  display: block;
+}
+
+/* Remove any default browser icons/checkmarks */
+select.form-control::-webkit-list-button {
+  display: none !important;
 }
 
 /* Color Input - Modern Style */

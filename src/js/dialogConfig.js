@@ -18,40 +18,53 @@
    * Initialize dialog
    */
   async function init() {
+    console.log('Dialog init starting...');
     try {
       // Initialize Tableau Extensions API
+      console.log('Initializing Tableau dialog API...');
       await tableau.extensions.initializeDialogAsync();
+      console.log('Tableau dialog API initialized');
 
       // Get the worksheet from viz extension context
       worksheet = tableau.extensions.worksheetContent.worksheet;
+      console.log('Worksheet:', worksheet ? 'found' : 'not found');
 
       // Load existing configuration
       loadConfig();
+      console.log('Config loaded');
 
       // Cache DOM elements
       cacheElements();
+      console.log('Elements cached');
 
       // Load columns from the worksheet
       await loadColumns();
+      console.log('Columns loaded');
 
       // Set up tab navigation FIRST (critical for UI)
       setupTabs();
+      console.log('Tabs setup complete');
 
       // Populate form with current values
       populateForm();
+      console.log('Form populated');
 
       // Set up event listeners (wrapped in try-catch to not block tabs)
       try {
         setupEventListeners();
+        console.log('Event listeners setup complete');
       } catch (eventError) {
         console.error('Error setting up event listeners:', eventError);
       }
 
       // Check if we should open a specific tab (from context menu)
       navigateToRequestedTab();
+      console.log('Dialog init complete');
 
     } catch (error) {
       console.error('Dialog initialization error:', error);
+      // Show error to user
+      document.body.innerHTML = '<div style="padding: 20px; color: red;"><h2>Dialog Error</h2><p>' + (error.message || error) + '</p></div>';
     }
   }
 
@@ -1939,6 +1952,7 @@
    * Save configuration and close dialog
    */
   async function saveAndClose() {
+    console.log('Save and close called');
     const errors = validate();
 
     if (errors.length > 0) {
@@ -1949,10 +1963,11 @@
     try {
       tableau.extensions.settings.set('comboChartConfig', JSON.stringify(config));
       await tableau.extensions.settings.saveAsync();
+      console.log('Settings saved, closing dialog');
       tableau.extensions.ui.closeDialog('saved');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings. Please try again.');
+      alert('Failed to save settings: ' + (error.message || error));
     }
   }
 
@@ -1960,7 +1975,14 @@
    * Close dialog without saving
    */
   function closeDialog() {
-    tableau.extensions.ui.closeDialog('cancelled');
+    console.log('Close dialog called');
+    try {
+      tableau.extensions.ui.closeDialog('cancelled');
+    } catch (error) {
+      console.error('Error closing dialog:', error);
+      // Fallback: try to close the window
+      window.close();
+    }
   }
 
   // Initialize when DOM is ready
