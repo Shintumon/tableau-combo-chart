@@ -37,6 +37,11 @@ const ComboChart = {
     this.svg = d3.select(`#${containerId}`);
     this.tooltip = d3.select(`#${tooltipId}`);
 
+    // Ensure SVG has no fixed dimensions initially
+    this.svg
+      .style('width', '100%')
+      .style('height', '100%');
+
     // Create main chart group
     this.chartGroup = this.svg.append('g')
       .attr('class', 'chart-group');
@@ -72,12 +77,17 @@ const ComboChart = {
    */
   setupResizeObserver() {
     const container = this.svg.node().parentElement;
+    let resizeTimeout;
     const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if (this.data) {
-          this.render(this.data, this.fieldNames, this.config);
+      // Debounce resize events to avoid excessive re-renders
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        for (const entry of entries) {
+          if (this.data) {
+            this.render(this.data, this.fieldNames, this.config);
+          }
         }
-      }
+      }, 100);
     });
     resizeObserver.observe(container);
   },
@@ -123,7 +133,7 @@ const ComboChart = {
 
     this.svg
       .attr('viewBox', `0 0 ${rect.width} ${rect.height}`)
-      .attr('preserveAspectRatio', 'none')
+      .attr('preserveAspectRatio', 'xMidYMid meet')
       .style('width', '100%')
       .style('height', '100%');
 
