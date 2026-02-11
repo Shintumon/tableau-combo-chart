@@ -97,15 +97,14 @@
       <div class="debug-actions">
         <button id="debug-clear" class="debug-btn" title="Clear">Clear</button>
         <button id="debug-copy" class="debug-btn" title="Copy">Copy</button>
-        <button id="debug-popout" class="debug-btn" title="Open in separate window">↗ Pop Out</button>
         <button id="debug-hide" class="debug-btn" title="Hide debug mode (Ctrl+Shift+D to restore)">Hide</button>
         <button id="debug-close" class="debug-btn" title="Close">×</button>
       </div>
     </div>
     <div id="debug-content" class="debug-content"></div>
   </div>
-  <!-- Debug toggle - always visible for troubleshooting -->
-  <button id="debug-toggle" class="debug-toggle" title="Toggle Debug Console">🐛</button>
+  <!-- Debug toggle - hidden by default, revealed by Ctrl+Shift+D -->
+  <button id="debug-toggle" class="debug-toggle hidden" title="Toggle Debug Console (Ctrl+Shift+D)">🐛</button>
 
   <script>
     // Debug Console Implementation
@@ -117,12 +116,10 @@
       const debugCopy = document.getElementById('debug-copy');
       const debugClose = document.getElementById('debug-close');
       const debugHide = document.getElementById('debug-hide');
-      const debugPopout = document.getElementById('debug-popout');
       const debugHeader = document.getElementById('debug-header');
 
       let logs = [];
       let isDragging = false;
-      let popoutWindow = null;
       let dragOffsetX = 0;
       let dragOffsetY = 0;
       const MAX_LOGS = 200;
@@ -210,165 +207,6 @@
         debugToggle.classList.add('hidden');
         console.log('Debug mode hidden. Press Ctrl+Shift+D to restore.');
       });
-
-      // Pop out to separate window
-      debugPopout.addEventListener('click', openDebugPopout);
-
-      function openDebugPopout() {
-        if (popoutWindow && !popoutWindow.closed) {
-          popoutWindow.focus();
-          return;
-        }
-
-        popoutWindow = window.open('', 'DebugConsoleMain', 'width=600,height=500,resizable=yes,scrollbars=yes');
-        if (!popoutWindow) {
-          alert('Popup blocked! Please allow popups for this site.');
-          return;
-        }
-
-        popoutWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Debug Console - Combo Chart</title>
-            <style>
-              * { box-sizing: border-box; margin: 0; padding: 0; }
-              body {
-                font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
-                font-size: 12px;
-                background: #1e1e1e;
-                color: #d4d4d4;
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-              }
-              .header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 10px 15px;
-                background: #2d2d2d;
-                border-bottom: 1px solid #3d3d3d;
-              }
-              .header h1 { font-size: 14px; font-weight: 600; color: #e0e0e0; }
-              .actions { display: flex; gap: 8px; }
-              .btn {
-                background: #3d3d3d;
-                border: none;
-                color: #e0e0e0;
-                padding: 6px 12px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              }
-              .btn:hover { background: #4d4d4d; }
-              .content { flex: 1; overflow-y: auto; padding: 10px; }
-              .log {
-                padding: 5px 8px;
-                margin-bottom: 3px;
-                border-radius: 3px;
-                white-space: pre-wrap;
-                word-break: break-all;
-                line-height: 1.5;
-              }
-              .log:hover { background: rgba(255,255,255,0.05); }
-              .time { color: #888; font-size: 11px; }
-              .type { font-weight: 600; margin-right: 6px; }
-              .log-info .type { color: #569cd6; }
-              .log-warn { background: rgba(255,193,7,0.1); }
-              .log-warn .type { color: #ffc107; }
-              .log-error { background: rgba(244,67,54,0.1); }
-              .log-error .type { color: #f44336; }
-              .content::-webkit-scrollbar { width: 10px; }
-              .content::-webkit-scrollbar-track { background: #1e1e1e; }
-              .content::-webkit-scrollbar-thumb { background: #4d4d4d; border-radius: 5px; }
-              .status { padding: 8px 15px; background: #252526; border-top: 1px solid #3d3d3d; font-size: 11px; color: #888; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>🐛 Debug Console - Combo Chart</h1>
-              <div class="actions">
-                <button class="btn" id="clear-btn">Clear</button>
-                <button class="btn" id="copy-btn">Copy All</button>
-              </div>
-            </div>
-            <div class="content" id="log-content"></div>
-            <div class="status" id="status">Connected to extension</div>
-          </body>
-          </html>
-        `);
-        popoutWindow.document.close();
-
-        const popContent = popoutWindow.document.getElementById('log-content');
-        const popClear = popoutWindow.document.getElementById('clear-btn');
-        const popCopy = popoutWindow.document.getElementById('copy-btn');
-        const popStatus = popoutWindow.document.getElementById('status');
-
-        function addLogToPopup(log) {
-          const el = popoutWindow.document.createElement('div');
-          el.className = 'log log-' + log.type;
-          el.innerHTML = '<span class="time">[' + log.timestamp + ']</span> <span class="type">' + log.type.toUpperCase() + '</span> ' + escapeHtml(log.message);
-          popContent.appendChild(el);
-          popContent.scrollTop = popContent.scrollHeight;
-        }
-
-        logs.forEach(addLogToPopup);
-
-        const originalAddLog = addLog;
-        addLog = function(type, ...args) {
-          const timestamp = new Date().toLocaleTimeString();
-          const message = args.map(arg => {
-            if (typeof arg === 'object') {
-              try { return JSON.stringify(arg, null, 2); }
-              catch (e) { return String(arg); }
-            }
-            return String(arg);
-          }).join(' ');
-
-          const log = { timestamp, type, message };
-          logs.push(log);
-          if (logs.length > MAX_LOGS) logs.shift();
-
-          const logEl = document.createElement('div');
-          logEl.className = 'debug-log debug-' + type;
-          logEl.innerHTML = '<span class="debug-time">[' + timestamp + ']</span> <span class="debug-type">' + type.toUpperCase() + '</span> ' + escapeHtml(message);
-          debugContent.appendChild(logEl);
-          debugContent.scrollTop = debugContent.scrollHeight;
-
-          if (popoutWindow && !popoutWindow.closed) {
-            addLogToPopup(log);
-          }
-        };
-
-        popClear.addEventListener('click', () => {
-          logs = [];
-          popContent.innerHTML = '';
-          debugContent.innerHTML = '';
-        });
-
-        popCopy.addEventListener('click', () => {
-          const text = logs.map(l => '[' + l.timestamp + '] ' + l.type.toUpperCase() + ': ' + l.message).join('\\n');
-          popoutWindow.navigator.clipboard.writeText(text).then(() => {
-            popCopy.textContent = 'Copied!';
-            setTimeout(() => { popCopy.textContent = 'Copy All'; }, 1500);
-          }).catch(() => {
-            popCopy.textContent = 'Failed';
-            setTimeout(() => { popCopy.textContent = 'Copy All'; }, 1500);
-          });
-        });
-
-        const statusInterval = setInterval(() => {
-          if (popoutWindow.closed) {
-            clearInterval(statusInterval);
-            return;
-          }
-          popStatus.textContent = 'Logs: ' + logs.length + ' | Connected';
-        }, 1000);
-
-        debugPanel.classList.add('hidden');
-        console.log('Debug console opened in separate window');
-      }
 
       // Drag functionality
       debugHeader.addEventListener('mousedown', (e) => {
