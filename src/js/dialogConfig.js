@@ -490,6 +490,11 @@
     elements.tooltipDefaultContent = document.getElementById('tooltip-default-content');
     elements.tooltipCustomContent = document.getElementById('tooltip-custom-content');
     elements.tooltipTemplate = document.getElementById('tooltip-template');
+    elements.tooltipPreview = document.getElementById('tooltip-preview');
+    elements.tooltipInsertDimension = document.getElementById('tooltip-insert-dimension');
+    elements.tooltipInsertBar1 = document.getElementById('tooltip-insert-bar1');
+    elements.tooltipInsertBar2 = document.getElementById('tooltip-insert-bar2');
+    elements.tooltipInsertLine = document.getElementById('tooltip-insert-line');
     elements.tooltipShowDimension = document.getElementById('tooltip-show-dimension');
     elements.tooltipShowMeasureName = document.getElementById('tooltip-show-measure-name');
     elements.tooltipShowValue = document.getElementById('tooltip-show-value');
@@ -1284,6 +1289,61 @@
     if (yAxisRightHeader) {
       yAxisRightHeader.innerHTML = lineName ? `Right Y-Axis (Line) <span class="field-badge">${lineName}</span>` : 'Right Y-Axis (Line)';
     }
+
+    // Update tooltip insert field buttons with actual field names
+    const dimName = cleanName(config.dimension);
+    if (elements.tooltipInsertDimension) {
+      elements.tooltipInsertDimension.textContent = dimName || 'Dimension';
+    }
+    if (elements.tooltipInsertBar1) {
+      elements.tooltipInsertBar1.textContent = bar1Name || 'Bar 1';
+    }
+    if (elements.tooltipInsertBar2) {
+      elements.tooltipInsertBar2.textContent = bar2Name || 'Bar 2';
+    }
+    if (elements.tooltipInsertLine) {
+      elements.tooltipInsertLine.textContent = lineName || 'Line';
+    }
+
+    // Update tooltip preview
+    updateTooltipPreview();
+  }
+
+  /**
+   * Update the tooltip template preview with sample values
+   */
+  function updateTooltipPreview() {
+    if (!elements.tooltipPreview) return;
+    const template = config.tooltip?.template;
+    if (!template) {
+      elements.tooltipPreview.innerHTML = '<em style="color:#999;font-size:11px;">Enter a template above to see preview</em>';
+      return;
+    }
+
+    const cleanName = (name) => {
+      if (!name) return '';
+      return name.replace(/^(SUM|AVG|MIN|MAX|COUNT|AGG|MEDIAN|STDEV|VAR)\((.+)\)$/i, '$2').trim();
+    };
+
+    // Sample values for preview
+    const sampleDim = cleanName(config.dimension) || 'Dimension';
+    const sampleBar1 = cleanName(config.bar1Measure) || 'Bar 1';
+    const sampleBar2 = cleanName(config.bar2Measure) || 'Bar 2';
+    const sampleLine = cleanName(config.lineMeasure) || 'Line';
+
+    const lines = template.split('\n');
+    let html = '';
+    lines.forEach(line => {
+      const rendered = line
+        .replace(/\{dimension\}/g, `<span class="preview-field">${sampleDim}</span>`)
+        .replace(/\{bar1\}/g, `<span class="preview-field">${sampleBar1}: 1,234</span>`)
+        .replace(/\{bar2\}/g, `<span class="preview-field">${sampleBar2}: 5,678</span>`)
+        .replace(/\{line\}/g, `<span class="preview-field">${sampleLine}: 42.5%</span>`)
+        .replace(/\{measure\}/g, `<span class="preview-field">Measure Name</span>`)
+        .replace(/\{value\}/g, `<span class="preview-field">1,234</span>`);
+      html += `<div class="preview-row">${rendered}</div>`;
+    });
+    elements.tooltipPreview.innerHTML = html;
   }
 
   /**
@@ -1787,8 +1847,38 @@
       config.tooltip.useCustom = e.target.checked;
       if (elements.tooltipDefaultContent) elements.tooltipDefaultContent.style.display = e.target.checked ? 'none' : 'block';
       if (elements.tooltipCustomContent) elements.tooltipCustomContent.style.display = e.target.checked ? 'block' : 'none';
+      if (e.target.checked) updateTooltipPreview();
     });
-    safeAddListener(elements.tooltipTemplate, 'input', (e) => config.tooltip.template = e.target.value);
+    safeAddListener(elements.tooltipTemplate, 'input', (e) => {
+      config.tooltip.template = e.target.value;
+      updateTooltipPreview();
+    });
+
+    // Tooltip insert field buttons
+    function insertTooltipField(field) {
+      const textarea = elements.tooltipTemplate;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      textarea.value = text.substring(0, start) + field + text.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start + field.length;
+      textarea.focus();
+      config.tooltip.template = textarea.value;
+      updateTooltipPreview();
+    }
+    if (elements.tooltipInsertDimension) {
+      elements.tooltipInsertDimension.addEventListener('click', () => insertTooltipField('{dimension}'));
+    }
+    if (elements.tooltipInsertBar1) {
+      elements.tooltipInsertBar1.addEventListener('click', () => insertTooltipField('{bar1}'));
+    }
+    if (elements.tooltipInsertBar2) {
+      elements.tooltipInsertBar2.addEventListener('click', () => insertTooltipField('{bar2}'));
+    }
+    if (elements.tooltipInsertLine) {
+      elements.tooltipInsertLine.addEventListener('click', () => insertTooltipField('{line}'));
+    }
     safeAddListener(elements.tooltipShowDimension, 'change', (e) => config.tooltip.showDimension = e.target.checked);
     safeAddListener(elements.tooltipShowMeasureName, 'change', (e) => config.tooltip.showMeasureName = e.target.checked);
     safeAddListener(elements.tooltipShowValue, 'change', (e) => config.tooltip.showValue = e.target.checked);

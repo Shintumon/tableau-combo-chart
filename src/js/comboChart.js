@@ -1391,6 +1391,9 @@ const ComboChart = {
       lines.forEach(line => {
         const rendered = line
           .replace(/\{dimension\}/g, d.dimension || '')
+          .replace(/\{bar1\}/g, d.bar1Formatted || '')
+          .replace(/\{bar2\}/g, d.bar2Formatted || '')
+          .replace(/\{line\}/g, d.lineFormatted || '')
           .replace(/\{measure\}/g, measureName)
           .replace(/\{value\}/g, value || '');
         html += `<div class="tooltip-row">${rendered}</div>`;

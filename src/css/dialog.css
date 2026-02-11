@@ -639,6 +639,64 @@ select.form-control option:hover {
   border-left: 3px solid var(--gray-300);
 }
 
+/* Tooltip Template Editor */
+.tooltip-insert-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tooltip-field-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid var(--primary-200);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: var(--primary-700);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tooltip-field-btn:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: var(--primary-400);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15);
+}
+
+.tooltip-field-btn:active {
+  transform: scale(0.96);
+}
+
+.tooltip-field-btn::before {
+  content: '+';
+  margin-right: 4px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.tooltip-preview {
+  padding: 10px 14px;
+  background: #333333;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  min-height: 36px;
+}
+
+.tooltip-preview .preview-row {
+  padding: 1px 0;
+}
+
+.tooltip-preview .preview-field {
+  color: #93c5fd;
+  font-weight: 600;
+}
+
 /* Validation States */
 .form-control.error {
   border-color: var(--error);
