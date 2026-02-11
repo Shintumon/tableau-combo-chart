@@ -104,8 +104,7 @@ const ComboChart = {
 
     // If dimensions are too small, container may not be laid out yet - skip this render
     if (rect.width < 50 || rect.height < 50) {
-      console.warn('[ComboChart] Container too small, deferring render:', rect.width, 'x', rect.height);
-      // Retry after layout settles
+      // Layout still settling, defer render silently
       setTimeout(() => {
         if (this.data) {
           this.render(this.data, this.fieldNames, this.config);
