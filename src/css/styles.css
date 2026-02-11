@@ -283,9 +283,6 @@ html, body {
   padding: 8px;
   background: white;
   overflow: hidden;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
 }
 
 .chart-area svg {
@@ -389,11 +386,6 @@ html, body {
 }
 
 /* Chart container layout adjustments for legend positions */
-.chart-container {
-  display: flex;
-  flex-direction: column;
-}
-
 .chart-container .chart-area {
   flex: 1 1 auto;
   order: 1;
