@@ -1391,9 +1391,16 @@ const ComboChart = {
       const bar2Name = this.getDisplayName('bar2');
       const lineName = this.getDisplayName('line');
 
+      // Get dimension label - use custom if set, otherwise clean field name
+      const legend = this.config.legend || {};
+      const dimFieldName = this.fieldNames?.dimension || this.config.dimension || '';
+      const cleanDimName = dimFieldName.replace(/^(SUM|AVG|MIN|MAX|COUNT|AGG|MEDIAN|STDEV|VAR|YEAR|MONTH|DAY|QUARTER|WEEK)\((.+)\)$/i, '$2').trim();
+      const dimensionLabel = legend.dimensionLabel || cleanDimName || 'Dimension';
+
       const lines = this.config.tooltip.template.split('\n');
       lines.forEach(line => {
         const rendered = line
+          .replace(/\{dimension_label\}/g, dimensionLabel)
           .replace(/\{dimension\}/g, d.dimension || '')
           .replace(/\{bar1_label\}/g, bar1Name)
           .replace(/\{bar1_value\}/g, d.bar1Formatted || '')

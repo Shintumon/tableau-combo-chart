@@ -242,6 +242,7 @@ const Config = {
       show: true,
       position: 'bottom', // 'bottom', 'top', 'right', 'left'
       align: 'center', // 'left', 'center', 'right' - alignment of legend items
+      dimensionLabel: '',  // Custom label for dimension (empty = use dimension name)
       bar1Label: '',  // Custom label for bar 1 (empty = use measure name)
       bar2Label: '',  // Custom label for bar 2
       lineLabel: '',  // Custom label for line

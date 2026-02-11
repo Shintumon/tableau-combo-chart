@@ -305,7 +305,7 @@
       title: { show: true, text: 'Combo Chart', fontSize: titleSize, color: '#333333' },
       barLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto', decimals: 0, currencySymbol: '$' },
       lineLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto', decimals: 0, currencySymbol: '$' },
-      legend: { show: true, position: 'bottom', bar1Label: '', bar2Label: '', lineLabel: '' },
+      legend: { show: true, position: 'bottom', dimensionLabel: '', bar1Label: '', bar2Label: '', lineLabel: '' },
       tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, useCustom: false, template: '', bgColor: '#333333', textColor: '#ffffff', fontSize: bodySize },
       headerControls: { showLegendToggle: true, showSettingsCog: true },
       separators: { showHeaderBorder: true, showLegendBorder: true },
@@ -480,6 +480,7 @@
     elements.legendAlign = document.getElementById('legend-align');
     elements.legendPadding = document.getElementById('legend-padding');
     elements.legendGap = document.getElementById('legend-gap');
+    elements.legendDimensionLabel = document.getElementById('legend-dimension-label');
     elements.legendBar1Label = document.getElementById('legend-bar1-label');
     elements.legendBar2Label = document.getElementById('legend-bar2-label');
     elements.legendLineLabel = document.getElementById('legend-line-label');
@@ -1326,7 +1327,8 @@
     };
 
     // Sample values for preview - use custom labels if available
-    const sampleDim = cleanName(config.dimension) || 'Dimension';
+    const sampleDimLabel = config.legend?.dimensionLabel || cleanName(config.dimension) || 'Dimension';
+    const sampleDimValue = 'Jan\' 25';
     const sampleBar1 = config.legend?.bar1Label || cleanName(config.bar1Measure) || 'Bar 1';
     const sampleBar2 = config.legend?.bar2Label || cleanName(config.bar2Measure) || 'Bar 2';
     const sampleLine = config.legend?.lineLabel || cleanName(config.lineMeasure) || 'Line';
@@ -1335,7 +1337,8 @@
     let html = '';
     lines.forEach(line => {
       const rendered = line
-        .replace(/\{dimension\}/g, `<span class="preview-field">${sampleDim}</span>`)
+        .replace(/\{dimension_label\}/g, `<span class="preview-field">${sampleDimLabel}</span>`)
+        .replace(/\{dimension\}/g, `<span class="preview-field">${sampleDimValue}</span>`)
         .replace(/\{bar1_label\}/g, `<span class="preview-field">${sampleBar1}</span>`)
         .replace(/\{bar1_value\}/g, `<span class="preview-field">1,234</span>`)
         .replace(/\{bar1\}/g, `<span class="preview-field">${sampleBar1} : 1,234</span>`)
@@ -1582,6 +1585,7 @@
     safeSetValue(elements.legendAlign, config.legend.align || 'center');
     safeSetValue(elements.legendPadding, config.legend.padding || 14);
     safeSetValue(elements.legendGap, config.legend.gap || 24);
+    safeSetValue(elements.legendDimensionLabel, config.legend.dimensionLabel || '');
     safeSetValue(elements.legendBar1Label, config.legend.bar1Label || '');
     safeSetValue(elements.legendBar2Label, config.legend.bar2Label || '');
     safeSetValue(elements.legendLineLabel, config.legend.lineLabel || '');
@@ -1818,9 +1822,22 @@
     safeAddListener(elements.legendAlign, 'change', (e) => config.legend.align = e.target.value);
     safeAddListener(elements.legendPadding, 'input', (e) => config.legend.padding = parseInt(e.target.value) || 14);
     safeAddListener(elements.legendGap, 'input', (e) => config.legend.gap = parseInt(e.target.value) || 24);
-    safeAddListener(elements.legendBar1Label, 'change', (e) => config.legend.bar1Label = e.target.value);
-    safeAddListener(elements.legendBar2Label, 'change', (e) => config.legend.bar2Label = e.target.value);
-    safeAddListener(elements.legendLineLabel, 'change', (e) => config.legend.lineLabel = e.target.value);
+    safeAddListener(elements.legendDimensionLabel, 'change', (e) => {
+      config.legend.dimensionLabel = e.target.value;
+      updateFieldLabels();
+    });
+    safeAddListener(elements.legendBar1Label, 'change', (e) => {
+      config.legend.bar1Label = e.target.value;
+      updateFieldLabels();
+    });
+    safeAddListener(elements.legendBar2Label, 'change', (e) => {
+      config.legend.bar2Label = e.target.value;
+      updateFieldLabels();
+    });
+    safeAddListener(elements.legendLineLabel, 'change', (e) => {
+      config.legend.lineLabel = e.target.value;
+      updateFieldLabels();
+    });
 
     // Text inputs
     safeAddListener(elements.xAxisTitle, 'change', (e) => config.xAxis.title = e.target.value);
