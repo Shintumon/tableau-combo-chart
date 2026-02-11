@@ -5,6 +5,9 @@
 (function() {
   'use strict';
 
+  // Version number for tracking deployments
+  const VERSION = '1.1.0';
+
   // Debug helper
   function log(msg) {
     if (window.debugLog) {
@@ -35,6 +38,9 @@
    * Initialize the extension
    */
   async function init() {
+    log('='.repeat(60));
+    log('Combo Chart Extension v' + VERSION);
+    log('='.repeat(60));
     log('Combo Chart: Initializing...');
 
     // Check if running inside Tableau
