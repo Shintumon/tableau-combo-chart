@@ -133,7 +133,7 @@ const ComboChart = {
 
     this.svg
       .attr('viewBox', `0 0 ${rect.width} ${rect.height}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet')
+      .attr('preserveAspectRatio', 'none')
       .style('width', '100%')
       .style('height', '100%');
 
