@@ -131,9 +131,10 @@ const ComboChart = {
     this.width = Math.max(0, rect.width - this.margin.left - this.margin.right);
     this.height = Math.max(0, rect.height - this.margin.top - this.margin.bottom);
 
+    // Use viewBox for responsive scaling (Tableau best practice)
     this.svg
-      .attr('width', rect.width)
-      .attr('height', rect.height)
+      .attr('viewBox', `0 0 ${rect.width} ${rect.height}`)
+      .attr('preserveAspectRatio', 'none')
       .style('width', '100%')
       .style('height', '100%');
 

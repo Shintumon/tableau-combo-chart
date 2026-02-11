@@ -290,7 +290,9 @@ html, body {
 .chart-area svg {
   flex: 1 1 auto;
   width: 100%;
+  height: 100%;
   min-height: 0;
+  min-width: 0;
   overflow: visible;
   display: block;
   text-rendering: optimizeLegibility;
@@ -393,65 +395,33 @@ html, body {
   order: 1;
 }
 
-/* Grid layout for left/right legend - ensures proper height distribution */
-.chart-container.legend-layout-right {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto 1fr;
-}
-
-.chart-container.legend-layout-right .chart-header {
-  grid-column: 1 / -1;
-  grid-row: 1;
-}
-
-.chart-container.legend-layout-right .chart-area {
-  grid-column: 1;
-  grid-row: 2;
-  min-width: 0;
-  min-height: 0;
-  display: block;
-}
-
-.chart-container.legend-layout-right .chart-area svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.chart-container.legend-layout-right .legend {
-  grid-column: 2;
-  grid-row: 2;
-}
-
+/* Flexbox layout for left/right legend - unified approach for all positions */
+.chart-container.legend-layout-right,
 .chart-container.legend-layout-left {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto 1fr;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
+/* Header takes full width on first row when legend is left/right */
+.chart-container.legend-layout-right .chart-header,
 .chart-container.legend-layout-left .chart-header {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  flex: 0 0 100%;
+  order: -1;
 }
 
+/* Chart area takes remaining space, allowing SVG to fill */
+.chart-container.legend-layout-right .chart-area,
 .chart-container.legend-layout-left .chart-area {
-  grid-column: 2;
-  grid-row: 2;
+  flex: 1 1 0%;
   min-width: 0;
   min-height: 0;
-  display: block;
 }
 
+/* Ensure SVG fills chart-area properly */
+.chart-container.legend-layout-right .chart-area svg,
 .chart-container.legend-layout-left .chart-area svg {
-  display: block;
   width: 100%;
   height: 100%;
-}
-
-.chart-container.legend-layout-left .legend {
-  grid-column: 1;
-  grid-row: 2;
 }
 
 /* Error State */
