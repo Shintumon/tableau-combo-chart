@@ -13,9 +13,6 @@
     <permissions>
       <permission>full data</permission>
     </permissions>
-    <context-menu>
-      <configure-context-menu-item />
-    </context-menu>
     <encoding id="dimension">
       <display-name>Category</display-name>
       <role-spec>
