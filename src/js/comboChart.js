@@ -1258,6 +1258,7 @@ const ComboChart = {
     }
 
     // Trigger re-render if legend position changed (to recalculate SVG dimensions)
+    // Use longer delay to allow CSS Grid/Flexbox transition to complete
     const prevPosition = this._lastLegendPosition;
     this._lastLegendPosition = position;
     if (prevPosition && prevPosition !== position) {
@@ -1265,7 +1266,7 @@ const ComboChart = {
         if (this._lastLegendPosition === position && this.data) {
           this.render(this.data, this.fieldNames, this.config);
         }
-      }, 50);
+      }, 150);
     }
 
     // Get display labels (custom legend labels or cleaned field names)
