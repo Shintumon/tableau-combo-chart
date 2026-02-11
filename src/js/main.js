@@ -254,6 +254,19 @@
       const bothHidden = headerControls.showLegendToggle === false && headerControls.showSettingsCog === false;
       chartControlsDiv.style.display = bothHidden ? 'none' : '';
     }
+
+    // Hide entire chart-header if both title and controls are hidden
+    const chartHeader = document.querySelector('.chart-header');
+    const titleElement = document.getElementById('chart-title');
+    if (chartHeader && titleElement) {
+      const titleHidden = !Config.current.title || Config.current.title.show === false;
+      const controlsHidden = headerControls.showLegendToggle === false && headerControls.showSettingsCog === false;
+      if (titleHidden && controlsHidden) {
+        chartHeader.style.display = 'none';
+      } else {
+        chartHeader.style.display = '';
+      }
+    }
   }
 
   /**
