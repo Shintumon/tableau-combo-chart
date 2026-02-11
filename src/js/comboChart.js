@@ -99,6 +99,21 @@ const ComboChart = {
     const container = this.svg.node().parentElement;
     const rect = container.getBoundingClientRect();
 
+    // Debug: log dimensions
+    console.log('[ComboChart] Chart area dimensions:', rect.width, 'x', rect.height);
+
+    // If dimensions are too small, container may not be laid out yet - skip this render
+    if (rect.width < 50 || rect.height < 50) {
+      console.warn('[ComboChart] Container too small, deferring render:', rect.width, 'x', rect.height);
+      // Retry after layout settles
+      setTimeout(() => {
+        if (this.data) {
+          this.render(this.data, this.fieldNames, this.config);
+        }
+      }, 100);
+      return;
+    }
+
     // Calculate responsive margins based on container size and axis configuration
     const baseMargin = Math.min(rect.width, rect.height) * 0.08;
 
@@ -137,6 +152,8 @@ const ComboChart = {
       .attr('preserveAspectRatio', 'none')
       .style('width', '100%')
       .style('height', '100%');
+
+    console.log('[ComboChart] SVG viewBox set to:', `0 0 ${rect.width} ${rect.height}`);
 
     this.chartGroup.attr('transform', `translate(${this.margin.left}, ${this.margin.top})`);
   },
