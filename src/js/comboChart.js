@@ -100,22 +100,11 @@ const ComboChart = {
     const rect = container.getBoundingClientRect();
 
     // Debug: log dimensions
-    console.log('[ComboChart] Chart area dimensions:', rect.width, 'x', rect.height);
-
-    // Visual debug overlay - show dimensions on chart
-    let debugDiv = document.getElementById('dimension-debug');
-    if (!debugDiv) {
-      debugDiv = document.createElement('div');
-      debugDiv.id = 'dimension-debug';
-      debugDiv.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:20px;border-radius:8px;font-size:14px;z-index:9999;pointer-events:none;font-family:monospace;';
-      document.body.appendChild(debugDiv);
-    }
-    debugDiv.innerHTML = `Chart Area: ${rect.width.toFixed(0)} × ${rect.height.toFixed(0)}<br>Legend: ${this.config?.legend?.position || 'unknown'}`;
+    console.log('[ComboChart] Chart area dimensions:', rect.width, 'x', rect.height, '| Legend:', this.config?.legend?.position || 'unknown');
 
     // If dimensions are too small, container may not be laid out yet - skip this render
     if (rect.width < 50 || rect.height < 50) {
       console.warn('[ComboChart] Container too small, deferring render:', rect.width, 'x', rect.height);
-      debugDiv.innerHTML += '<br><span style="color:#ff6b6b">⚠ Too small, retrying...</span>';
       // Retry after layout settles
       setTimeout(() => {
         if (this.data) {
@@ -124,13 +113,6 @@ const ComboChart = {
       }, 100);
       return;
     }
-
-    // Remove debug overlay after 2 seconds
-    setTimeout(() => {
-      if (debugDiv && debugDiv.parentNode) {
-        debugDiv.parentNode.removeChild(debugDiv);
-      }
-    }, 2000);
 
     // Calculate responsive margins based on container size and axis configuration
     const baseMargin = Math.min(rect.width, rect.height) * 0.08;

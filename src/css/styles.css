@@ -389,17 +389,20 @@ html, body {
   order: 2;
 }
 
-/* Modern CSS Grid Layout - Simple & Reliable (Bootstrap-style approach) */
-
-/* Left/Right Legend: 2-column grid */
-.chart-container.legend-layout-left,
-.chart-container.legend-layout-right {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  grid-template-columns: auto 1fr;
+/* Chart area order for flexbox top/bottom legend layouts */
+.chart-container .chart-area {
+  order: 1; /* Between top (0) and bottom (2) legends */
 }
 
-/* Left legend layout */
+/* Modern CSS Grid Layout - Simple & Reliable (Bootstrap-style approach) */
+
+/* Left legend: legend first, then chart */
+.chart-container.legend-layout-left {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: auto 1fr; /* legend=auto, chart=1fr */
+}
+
 .chart-container.legend-layout-left .chart-header {
   grid-row: 1;
   grid-column: 1 / -1; /* Span both columns */
@@ -419,7 +422,13 @@ html, body {
   min-height: 0;
 }
 
-/* Right legend layout */
+/* Right legend: chart first, then legend */
+.chart-container.legend-layout-right {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr auto; /* chart=1fr, legend=auto */
+}
+
 .chart-container.legend-layout-right .chart-header {
   grid-row: 1;
   grid-column: 1 / -1; /* Span both columns */
@@ -427,14 +436,14 @@ html, body {
 
 .chart-container.legend-layout-right .chart-area {
   grid-row: 2;
-  grid-column: 1;
+  grid-column: 1; /* Chart in first column */
   min-width: 0;
   min-height: 0;
 }
 
 .chart-container.legend-layout-right .legend {
   grid-row: 2;
-  grid-column: 2;
+  grid-column: 2; /* Legend in second column */
   min-width: 100px;
   max-width: 150px;
 }
