@@ -6,7 +6,7 @@
   'use strict';
 
   // Version number for tracking deployments
-  const VERSION = '1.2.1';
+  const VERSION = '1.3.0';
 
   // Debug helper
   function log(msg) {
