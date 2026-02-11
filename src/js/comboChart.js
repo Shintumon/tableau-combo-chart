@@ -1262,8 +1262,8 @@ const ComboChart = {
     this._lastLegendPosition = position;
     if (prevPosition && prevPosition !== position) {
       setTimeout(() => {
-        if (this._lastLegendPosition === position) {
-          this.render();
+        if (this._lastLegendPosition === position && this.data) {
+          this.render(this.data, this.fieldNames, this.config);
         }
       }, 50);
     }
