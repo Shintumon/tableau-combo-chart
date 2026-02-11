@@ -259,11 +259,20 @@
     const chartHeader = document.querySelector('.chart-header');
     const titleElement = document.getElementById('chart-title');
     if (chartHeader && titleElement) {
+      const wasVisible = chartHeader.style.display !== 'none';
       const titleHidden = !Config.current.title || Config.current.title.show === false;
       const controlsHidden = headerControls.showLegendToggle === false && headerControls.showSettingsCog === false;
+      const willBeVisible = !(titleHidden && controlsHidden);
+
       if (titleHidden && controlsHidden) {
+        if (wasVisible) {
+          log('Chart header hidden (title & controls hidden) - chart area should expand');
+        }
         chartHeader.style.display = 'none';
       } else {
+        if (!wasVisible) {
+          log('Chart header shown - chart area should shrink');
+        }
         chartHeader.style.display = '';
       }
     }

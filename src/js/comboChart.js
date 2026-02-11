@@ -83,6 +83,9 @@ const ComboChart = {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         for (const entry of entries) {
+          const newSize = entry.contentRect;
+          console.log('[ComboChart] ResizeObserver detected size change:',
+            `${newSize.width.toFixed(0)}×${newSize.height.toFixed(0)}`);
           if (this.data) {
             this.render(this.data, this.fieldNames, this.config);
           }
@@ -90,6 +93,7 @@ const ComboChart = {
       }, 100);
     });
     resizeObserver.observe(container);
+    console.log('[ComboChart] ResizeObserver initialized on chart-area');
   },
 
   /**
@@ -1334,7 +1338,13 @@ const ComboChart = {
    */
   updateTitle() {
     const titleElement = document.getElementById('chart-title');
+    const wasVisible = titleElement && titleElement.style.display !== 'none';
+    const willBeVisible = this.config.title.show;
+
     if (this.config.title.show && titleElement) {
+      if (!wasVisible) {
+        console.log('[ComboChart] Title shown - chart area should shrink');
+      }
       titleElement.textContent = this.config.title.text || 'Combo Chart';
       titleElement.style.display = 'block';
       titleElement.style.cursor = 'pointer';
@@ -1369,6 +1379,9 @@ const ComboChart = {
         titleElement.dataset.hasContextMenu = 'true';
       }
     } else if (titleElement) {
+      if (wasVisible) {
+        console.log('[ComboChart] Title hidden - chart area should expand');
+      }
       titleElement.style.display = 'none';
     }
   },
