@@ -699,12 +699,12 @@ const ComboChart = {
 
     // Calculate bar dimensions from config
     const barGap = this.config.barGap !== undefined ? this.config.barGap : 4;
-    const configBarWidth = this.config.barWidth || 0;
+    const barWidthPercent = this.config.barWidth !== undefined ? this.config.barWidth : 100;
 
     if (this.config.barStyle === 'grouped') {
       // Grouped bars - side by side
       const autoBarWidth = (bandWidth - barGap) / 2;
-      const barWidth = configBarWidth > 0 ? configBarWidth : autoBarWidth;
+      const barWidth = autoBarWidth * (barWidthPercent / 100);
       // Center the bar group within the band
       const groupWidth = Math.min(barWidth * 2 + barGap, bandWidth);
       const groupOffset = (bandWidth - groupWidth) / 2;
@@ -792,7 +792,7 @@ const ComboChart = {
     } else {
       // Stacked bars
       const autoStackWidth = bandWidth - 4;
-      const barWidth = configBarWidth > 0 ? Math.min(configBarWidth, bandWidth) : autoStackWidth;
+      const barWidth = autoStackWidth * (barWidthPercent / 100);
       const stackOffset = (bandWidth - barWidth) / 2;
       const bar1ShowBorder = this.config.bar1.showBorder !== false;
       const bar2ShowBorder = this.config.bar2.showBorder !== false;

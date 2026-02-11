@@ -82,7 +82,7 @@ const Config = {
     barStyle: 'grouped', // 'grouped' or 'stacked'
     barPadding: 0.2,
     barGap: 4,       // px gap between bar 1 and bar 2 in grouped mode
-    barWidth: 0,     // 0 = auto (fill band), >0 = fixed px width per bar
+    barWidth: 100,   // Percentage of available space (0-100%)
 
     bar1: {
       color: '#4e79a7',

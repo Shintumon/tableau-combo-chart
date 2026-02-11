@@ -290,7 +290,7 @@
       barStyle: 'grouped',
       barPadding: 0.2,
       barGap: 4,
-      barWidth: 0,
+      barWidth: 100,
       bar1: { color: '#4e79a7', opacity: 1, borderColor: '#3a5f80', borderWidth: 1, cornerRadius: 2 },
       bar2: { color: '#f28e2c', opacity: 1, borderColor: '#c47223', borderWidth: 1, cornerRadius: 2 },
       line: { color: '#e15759', opacity: 1, width: 2, style: 'solid', curve: 'linear' },
