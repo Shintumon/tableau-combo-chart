@@ -256,6 +256,8 @@ const Config = {
       showDimension: true,
       showMeasureName: true,
       showValue: true,
+      useCustom: false,
+      template: '',
       bgColor: '#333333',
       textColor: '#ffffff',
       fontSize: 12

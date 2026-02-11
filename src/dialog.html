@@ -1216,21 +1216,36 @@
           <h3>Tooltip Content</h3>
           <div class="form-group">
             <label class="checkbox-label">
-              <input type="checkbox" id="tooltip-show-dimension" checked>
-              <span>Show Dimension Value</span>
+              <input type="checkbox" id="tooltip-use-custom" >
+              <span>Use Custom Template</span>
             </label>
           </div>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="tooltip-show-measure-name" checked>
-              <span>Show Measure Name</span>
-            </label>
+          <div id="tooltip-default-content">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="tooltip-show-dimension" checked>
+                <span>Show Dimension Value</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="tooltip-show-measure-name" checked>
+                <span>Show Measure Name</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="tooltip-show-value" checked>
+                <span>Show Value</span>
+              </label>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="tooltip-show-value" checked>
-              <span>Show Value</span>
-            </label>
+          <div id="tooltip-custom-content" style="display:none;">
+            <div class="form-group">
+              <label for="tooltip-template">Template</label>
+              <textarea id="tooltip-template" class="form-control" rows="4" placeholder="{dimension}&#10;{measure}: {value}"></textarea>
+              <p class="help-text">Placeholders: {dimension}, {measure}, {value}. Each line = new row.</p>
+            </div>
           </div>
         </section>
 

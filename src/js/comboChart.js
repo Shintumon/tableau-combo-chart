@@ -1381,20 +1381,30 @@ const ComboChart = {
 
     let html = '';
 
-    if (this.config.tooltip.showDimension) {
-      html += `<div class="tooltip-title">${d.dimension}</div>`;
-    }
-
     const measureName = this.getDisplayName(type);
-
     const value = type === 'bar1' ? d.bar1Formatted
       : type === 'bar2' ? d.bar2Formatted
       : d.lineFormatted;
 
-    if (this.config.tooltip.showMeasureName && this.config.tooltip.showValue) {
-      html += `<div class="tooltip-row"><span class="tooltip-label">${measureName}:</span><span class="tooltip-value">${value}</span></div>`;
-    } else if (this.config.tooltip.showValue) {
-      html += `<div class="tooltip-value">${value}</div>`;
+    if (this.config.tooltip.useCustom && this.config.tooltip.template) {
+      const lines = this.config.tooltip.template.split('\n');
+      lines.forEach(line => {
+        const rendered = line
+          .replace(/\{dimension\}/g, d.dimension || '')
+          .replace(/\{measure\}/g, measureName)
+          .replace(/\{value\}/g, value || '');
+        html += `<div class="tooltip-row">${rendered}</div>`;
+      });
+    } else {
+      if (this.config.tooltip.showDimension) {
+        html += `<div class="tooltip-title">${d.dimension}</div>`;
+      }
+
+      if (this.config.tooltip.showMeasureName && this.config.tooltip.showValue) {
+        html += `<div class="tooltip-row"><span class="tooltip-label">${measureName}:</span><span class="tooltip-value">${value}</span></div>`;
+      } else if (this.config.tooltip.showValue) {
+        html += `<div class="tooltip-value">${value}</div>`;
+      }
     }
 
     // Apply tooltip font settings

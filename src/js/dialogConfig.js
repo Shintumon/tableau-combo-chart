@@ -306,7 +306,7 @@
       barLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto', decimals: 0, currencySymbol: '$' },
       lineLabels: { show: false, position: 'top', fontSize: labelSize, color: '#333333', format: 'auto', decimals: 0, currencySymbol: '$' },
       legend: { show: true, position: 'bottom', bar1Label: '', bar2Label: '', lineLabel: '' },
-      tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, bgColor: '#333333', textColor: '#ffffff', fontSize: bodySize },
+      tooltip: { show: true, showDimension: true, showMeasureName: true, showValue: true, useCustom: false, template: '', bgColor: '#333333', textColor: '#ffffff', fontSize: bodySize },
       headerControls: { showLegendToggle: true, showSettingsCog: true },
       separators: { showHeaderBorder: true, showLegendBorder: true },
       titleFont: { family: detectedFont, size: titleSize, weight: 600, color: '#333333', italic: false },
@@ -486,6 +486,10 @@
 
     // Tooltip tab
     elements.showTooltip = document.getElementById('show-tooltip');
+    elements.tooltipUseCustom = document.getElementById('tooltip-use-custom');
+    elements.tooltipDefaultContent = document.getElementById('tooltip-default-content');
+    elements.tooltipCustomContent = document.getElementById('tooltip-custom-content');
+    elements.tooltipTemplate = document.getElementById('tooltip-template');
     elements.tooltipShowDimension = document.getElementById('tooltip-show-dimension');
     elements.tooltipShowMeasureName = document.getElementById('tooltip-show-measure-name');
     elements.tooltipShowValue = document.getElementById('tooltip-show-value');
@@ -1520,12 +1524,17 @@
 
     // Tooltip
     safeSetChecked(elements.showTooltip, config.tooltip.show);
+    safeSetChecked(elements.tooltipUseCustom, config.tooltip.useCustom);
+    safeSetValue(elements.tooltipTemplate, config.tooltip.template || '');
     safeSetChecked(elements.tooltipShowDimension, config.tooltip.showDimension);
     safeSetChecked(elements.tooltipShowMeasureName, config.tooltip.showMeasureName);
     safeSetChecked(elements.tooltipShowValue, config.tooltip.showValue);
     safeSetValue(elements.tooltipBgColor, config.tooltip.bgColor);
     safeSetValue(elements.tooltipTextColor, config.tooltip.textColor);
     safeSetValue(elements.tooltipFontSize, config.tooltip.fontSize);
+    // Toggle custom vs default content visibility
+    if (elements.tooltipDefaultContent) elements.tooltipDefaultContent.style.display = config.tooltip.useCustom ? 'none' : 'block';
+    if (elements.tooltipCustomContent) elements.tooltipCustomContent.style.display = config.tooltip.useCustom ? 'block' : 'none';
 
     // Animation settings
     if (config.animation) {
@@ -1774,6 +1783,12 @@
     safeAddListener(elements.showLineLabels, 'change', (e) => config.lineLabels.show = e.target.checked);
     safeAddListener(elements.showLegend, 'change', (e) => config.legend.show = e.target.checked);
     safeAddListener(elements.showTooltip, 'change', (e) => config.tooltip.show = e.target.checked);
+    safeAddListener(elements.tooltipUseCustom, 'change', (e) => {
+      config.tooltip.useCustom = e.target.checked;
+      if (elements.tooltipDefaultContent) elements.tooltipDefaultContent.style.display = e.target.checked ? 'none' : 'block';
+      if (elements.tooltipCustomContent) elements.tooltipCustomContent.style.display = e.target.checked ? 'block' : 'none';
+    });
+    safeAddListener(elements.tooltipTemplate, 'input', (e) => config.tooltip.template = e.target.value);
     safeAddListener(elements.tooltipShowDimension, 'change', (e) => config.tooltip.showDimension = e.target.checked);
     safeAddListener(elements.tooltipShowMeasureName, 'change', (e) => config.tooltip.showMeasureName = e.target.checked);
     safeAddListener(elements.tooltipShowValue, 'change', (e) => config.tooltip.showValue = e.target.checked);
