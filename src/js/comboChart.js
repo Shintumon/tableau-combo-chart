@@ -123,31 +123,41 @@ const ComboChart = {
     // Top margin - accommodate title
     this.margin.top = this.config.title?.show ? Math.max(25, Math.min(45, baseMargin * 0.8)) : 20;
 
-    // Bottom margin - accommodate x-axis labels based on rotation
-    const xRotation = Math.abs(this.config.xAxis?.rotation || 0);
-    const bottomBase = xRotation === 0 ? 45 : xRotation <= 45 ? 60 : 80;
-    // Add extra space if x-axis title is shown
-    const hasXTitle = this.config.xAxis?.showTitle !== false &&
-      (this.config.xAxis?.title || this.fieldNames?.dimension);
-    const bottomExtra = hasXTitle ? 20 : 0;
-    this.margin.bottom = Math.max(40, Math.min(110, bottomBase + bottomExtra));
+    // Bottom margin - accommodate x-axis labels based on rotation (only if shown)
+    if (this.config.xAxis?.show !== false) {
+      const xRotation = Math.abs(this.config.xAxis?.rotation || 0);
+      const bottomBase = xRotation === 0 ? 45 : xRotation <= 45 ? 60 : 80;
+      // Add extra space if x-axis title is shown
+      const hasXTitle = this.config.xAxis?.showTitle !== false &&
+        (this.config.xAxis?.title || this.fieldNames?.dimension);
+      const bottomExtra = hasXTitle ? 20 : 0;
+      this.margin.bottom = Math.max(40, Math.min(110, bottomBase + bottomExtra));
+    } else {
+      this.margin.bottom = 10; // Minimal margin when X-axis is hidden
+    }
 
-    // Left margin - accommodate y-axis labels and title (increased for better readability)
-    const leftBase = Math.max(70, Math.min(110, baseMargin * 1.4));
-    const leftExtra = this.config.yAxisLeft?.showTitle !== false ? 25 : 0;
-    this.margin.left = leftBase + leftExtra;
+    // Left margin - accommodate y-axis labels and title (only if shown)
+    if (this.config.yAxisLeft?.show !== false) {
+      const leftBase = Math.max(70, Math.min(110, baseMargin * 1.4));
+      const leftExtra = this.config.yAxisLeft?.showTitle !== false ? 25 : 0;
+      this.margin.left = leftBase + leftExtra;
+    } else {
+      this.margin.left = 10; // Minimal margin when Y-axis left is hidden
+    }
 
-    // Right margin - accommodate right y-axis if dual mode
-    if (this.config.axisMode === 'dual') {
+    // Right margin - accommodate right y-axis if dual mode (only if shown)
+    if (this.config.axisMode === 'dual' && this.config.yAxisRight?.show !== false) {
       const rightBase = Math.max(50, Math.min(80, baseMargin * 1.1));
       const rightExtra = this.config.yAxisRight?.showTitle !== false ? 20 : 0;
       this.margin.right = rightBase + rightExtra;
     } else {
-      this.margin.right = 20;
+      this.margin.right = 10; // Minimal margin when Y-axis right is hidden or single mode
     }
 
     this.width = Math.max(0, rect.width - this.margin.left - this.margin.right);
     this.height = Math.max(0, rect.height - this.margin.top - this.margin.bottom);
+
+    console.log('[ComboChart] Margins:', `T:${this.margin.top} R:${this.margin.right} B:${this.margin.bottom} L:${this.margin.left} | Drawing area: ${this.width}×${this.height}`);
 
     // Use viewBox for responsive scaling (Tableau best practice)
     this.svg
