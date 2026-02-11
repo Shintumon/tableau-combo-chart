@@ -1325,20 +1325,26 @@
       return name.replace(/^(SUM|AVG|MIN|MAX|COUNT|AGG|MEDIAN|STDEV|VAR)\((.+)\)$/i, '$2').trim();
     };
 
-    // Sample values for preview
+    // Sample values for preview - use custom labels if available
     const sampleDim = cleanName(config.dimension) || 'Dimension';
-    const sampleBar1 = cleanName(config.bar1Measure) || 'Bar 1';
-    const sampleBar2 = cleanName(config.bar2Measure) || 'Bar 2';
-    const sampleLine = cleanName(config.lineMeasure) || 'Line';
+    const sampleBar1 = config.legend?.bar1Label || cleanName(config.bar1Measure) || 'Bar 1';
+    const sampleBar2 = config.legend?.bar2Label || cleanName(config.bar2Measure) || 'Bar 2';
+    const sampleLine = config.legend?.lineLabel || cleanName(config.lineMeasure) || 'Line';
 
     const lines = template.split('\n');
     let html = '';
     lines.forEach(line => {
       const rendered = line
         .replace(/\{dimension\}/g, `<span class="preview-field">${sampleDim}</span>`)
-        .replace(/\{bar1\}/g, `<span class="preview-field">${sampleBar1}: 1,234</span>`)
-        .replace(/\{bar2\}/g, `<span class="preview-field">${sampleBar2}: 5,678</span>`)
-        .replace(/\{line\}/g, `<span class="preview-field">${sampleLine}: 42.5%</span>`)
+        .replace(/\{bar1_label\}/g, `<span class="preview-field">${sampleBar1}</span>`)
+        .replace(/\{bar1_value\}/g, `<span class="preview-field">1,234</span>`)
+        .replace(/\{bar1\}/g, `<span class="preview-field">${sampleBar1} : 1,234</span>`)
+        .replace(/\{bar2_label\}/g, `<span class="preview-field">${sampleBar2}</span>`)
+        .replace(/\{bar2_value\}/g, `<span class="preview-field">5,678</span>`)
+        .replace(/\{bar2\}/g, `<span class="preview-field">${sampleBar2} : 5,678</span>`)
+        .replace(/\{line_label\}/g, `<span class="preview-field">${sampleLine}</span>`)
+        .replace(/\{line_value\}/g, `<span class="preview-field">42.5%</span>`)
+        .replace(/\{line\}/g, `<span class="preview-field">${sampleLine} : 42.5%</span>`)
         .replace(/\{measure\}/g, `<span class="preview-field">Measure Name</span>`)
         .replace(/\{value\}/g, `<span class="preview-field">1,234</span>`);
       html += `<div class="preview-row">${rendered}</div>`;

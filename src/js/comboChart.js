@@ -694,9 +694,9 @@ const ComboChart = {
     if (this.config.barStyle === 'grouped') {
       // Grouped bars - side by side
       const autoBarWidth = (bandWidth - barGap) / 2;
-      const barWidth = configBarWidth > 0 ? Math.min(configBarWidth, autoBarWidth) : autoBarWidth;
+      const barWidth = configBarWidth > 0 ? configBarWidth : autoBarWidth;
       // Center the bar group within the band
-      const groupWidth = barWidth * 2 + barGap;
+      const groupWidth = Math.min(barWidth * 2 + barGap, bandWidth);
       const groupOffset = (bandWidth - groupWidth) / 2;
 
       // Bar 1
@@ -782,7 +782,7 @@ const ComboChart = {
     } else {
       // Stacked bars
       const autoStackWidth = bandWidth - 4;
-      const barWidth = configBarWidth > 0 ? Math.min(configBarWidth, autoStackWidth) : autoStackWidth;
+      const barWidth = configBarWidth > 0 ? Math.min(configBarWidth, bandWidth) : autoStackWidth;
       const stackOffset = (bandWidth - barWidth) / 2;
       const bar1ShowBorder = this.config.bar1.showBorder !== false;
       const bar2ShowBorder = this.config.bar2.showBorder !== false;
@@ -1387,13 +1387,23 @@ const ComboChart = {
       : d.lineFormatted;
 
     if (this.config.tooltip.useCustom && this.config.tooltip.template) {
+      const bar1Name = this.getDisplayName('bar1');
+      const bar2Name = this.getDisplayName('bar2');
+      const lineName = this.getDisplayName('line');
+
       const lines = this.config.tooltip.template.split('\n');
       lines.forEach(line => {
         const rendered = line
           .replace(/\{dimension\}/g, d.dimension || '')
-          .replace(/\{bar1\}/g, d.bar1Formatted || '')
-          .replace(/\{bar2\}/g, d.bar2Formatted || '')
-          .replace(/\{line\}/g, d.lineFormatted || '')
+          .replace(/\{bar1_label\}/g, bar1Name)
+          .replace(/\{bar1_value\}/g, d.bar1Formatted || '')
+          .replace(/\{bar1\}/g, `${bar1Name} : ${d.bar1Formatted || ''}`)
+          .replace(/\{bar2_label\}/g, bar2Name)
+          .replace(/\{bar2_value\}/g, d.bar2Formatted || '')
+          .replace(/\{bar2\}/g, `${bar2Name} : ${d.bar2Formatted || ''}`)
+          .replace(/\{line_label\}/g, lineName)
+          .replace(/\{line_value\}/g, d.lineFormatted || '')
+          .replace(/\{line\}/g, `${lineName} : ${d.lineFormatted || ''}`)
           .replace(/\{measure\}/g, measureName)
           .replace(/\{value\}/g, value || '');
         html += `<div class="tooltip-row">${rendered}</div>`;

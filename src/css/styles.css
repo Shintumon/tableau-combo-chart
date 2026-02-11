@@ -368,6 +368,12 @@ html, body {
 .legend.legend-top {
   border-top: none;
   border-bottom: 1px solid var(--gray-200);
+  border-left: none;
+  border-right: none;
+  flex-direction: row;
+  max-width: none;
+  min-width: unset;
+  width: auto;
   order: 0;
 }
 
