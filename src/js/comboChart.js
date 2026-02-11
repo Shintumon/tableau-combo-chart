@@ -122,10 +122,10 @@ const ComboChart = {
     this.height = Math.max(0, rect.height - this.margin.top - this.margin.bottom);
 
     this.svg
-      .attr('width', rect.width)
-      .attr('height', rect.height)
       .attr('viewBox', `0 0 ${rect.width} ${rect.height}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet');
+      .attr('preserveAspectRatio', 'none')
+      .style('width', '100%')
+      .style('height', '100%');
 
     this.chartGroup.attr('transform', `translate(${this.margin.left}, ${this.margin.top})`);
   },
@@ -1404,7 +1404,7 @@ const ComboChart = {
       }
 
       if (this.config.tooltip.showMeasureName && this.config.tooltip.showValue) {
-        html += `<div class="tooltip-row"><span class="tooltip-label">${measureName}:</span><span class="tooltip-value">${value}</span></div>`;
+        html += `<div class="tooltip-row"><span class="tooltip-label">${measureName} :</span><span class="tooltip-value">${value}</span></div>`;
       } else if (this.config.tooltip.showValue) {
         html += `<div class="tooltip-value">${value}</div>`;
       }
